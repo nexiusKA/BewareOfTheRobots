@@ -37,6 +37,9 @@ const Game = (() => {
   // ── Fail flash ───────────────────────────────────────────
   let _failFlash = 0;
 
+  // ── Debug mode (# key) ───────────────────────────────────
+  let _debugMode = false;
+
   function init(canvas) {
     _canvas = canvas;
     _ctx    = canvas.getContext('2d');
@@ -140,6 +143,11 @@ const Game = (() => {
   }
 
   function _update(rawDt, dt) {
+    // Toggle debug mode
+    if (Input.isPressedKey('#')) {
+      _debugMode = !_debugMode;
+    }
+
     // Global restart shortcut
     if (Input.isPressed('KeyR')) {
       if (_state !== STATE.INTRO) {
@@ -165,7 +173,7 @@ const Game = (() => {
     // Enemies
     EnemyManager.update(dt, Player.getPx(), Player.getPy());
 
-    if (EnemyManager.wasDetected()) {
+    if (EnemyManager.wasDetected() && !_debugMode) {
       _onDetected();
       return;
     }
@@ -217,6 +225,21 @@ const Game = (() => {
     UI.drawVignette(ctx, W, H);
     UI.drawScanlines(ctx, W, H);
     UI.drawHUD(ctx, W, H);
+
+    // Debug mode indicator
+    if (_debugMode) {
+      ctx.save();
+      ctx.font = 'bold 12px Courier New';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#00ff44';
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#00ff44';
+      // Position below the HUD bar (HUD_HEIGHT = 38, vertically centred in lower half)
+      ctx.fillText('[ DEBUG ]', 8, _HUD_HEIGHT / 2 + 14);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
   }
 
   return { init, start };
