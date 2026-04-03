@@ -5,10 +5,12 @@ const Input = (() => {
   const _keys = {};
   const _justPressed = {};
   const _justReleased = {};
+  const _justPressedKeys = {}; // keyed by e.key value
 
   function _onKeyDown(e) {
     if (!_keys[e.code]) {
       _justPressed[e.code] = true;
+      _justPressedKeys[e.key] = true;
     }
     _keys[e.code] = true;
     // Prevent arrow / space scroll
@@ -31,6 +33,7 @@ const Input = (() => {
     // Call once per frame after processing
     for (const k in _justPressed) delete _justPressed[k];
     for (const k in _justReleased) delete _justReleased[k];
+    for (const k in _justPressedKeys) delete _justPressedKeys[k];
   }
 
   function isDown(code) {
@@ -43,6 +46,11 @@ const Input = (() => {
 
   function isReleased(code) {
     return !!_justReleased[code];
+  }
+
+  // Returns true if a key matching e.key value was just pressed this frame
+  function isPressedKey(key) {
+    return !!_justPressedKeys[key];
   }
 
   // Returns { dx, dy } from WASD / Arrow keys for this frame
@@ -61,5 +69,5 @@ const Input = (() => {
     return { dx, dy };
   }
 
-  return { init, flush, isDown, isPressed, isReleased, getMoveDelta };
+  return { init, flush, isDown, isPressed, isReleased, isPressedKey, getMoveDelta };
 })();
