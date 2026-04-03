@@ -88,7 +88,7 @@ body {
   box-shadow: 0 0 12px currentColor;
 }
 
-/* Colour themes per state */
+/* Color themes per state */
 .overlay-start  { color: #00ffcc; }
 .overlay-win    { color: #aaff00; }
 .overlay-fail   { color: #ff4455; }
