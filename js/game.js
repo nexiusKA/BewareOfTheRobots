@@ -37,6 +37,16 @@ const Game = (() => {
   // ── Fail flash ───────────────────────────────────────────
   let _failFlash = 0;
 
+  // ── Camera shake ─────────────────────────────────────────
+  const SHAKE_DURATION = 0.55;
+  const SHAKE_AMP      = 9;
+  let _shakeDur = 0;
+  let _shakeX   = 0;
+  let _shakeY   = 0;
+
+  // ── Cached threat level (for rendering) ──────────────────
+  let _threat = 0;
+
   // ── Debug mode (# key) ───────────────────────────────────
   let _debugMode = false;
 
