@@ -17,7 +17,7 @@ const EnemyManager = (() => {
   let _detected  = false; // has detection occurred this frame?
 
   // ── Detection config (tunable via debug mode) ────────────
-  let _detectTime = 0.8;   // seconds of continuous visibility needed to trigger detection
+  let _detectTime = 0.2;   // seconds of continuous visibility needed to trigger detection
   let _coneScale  = 0.70;  // scale factor applied to both visionRange and visionAngle
 
   // Fraction of _detectTime it takes the meter to fully drain when out of sight

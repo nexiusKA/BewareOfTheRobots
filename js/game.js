@@ -155,8 +155,9 @@ const Game = (() => {
     UI.flashAmmoCollect();
   }
 
-  function _onDoorOpen() {
-    // Could add door-open sound here
+  function _onDoorOpen(col, row) {
+    Sound.doorOpen();
+    Tilemap.startDoorOpenEffect(col, row);
   }
 
   function _onExit() {
