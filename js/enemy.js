@@ -184,9 +184,11 @@ const EnemyManager = (() => {
 
   function draw(ctx) {
     for (const e of _enemies) {
+      if (!FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS))) continue;
       _drawVisionCone(ctx, e);
     }
     for (const e of _enemies) {
+      if (!FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS))) continue;
       _drawEnemy(ctx, e);
     }
   }

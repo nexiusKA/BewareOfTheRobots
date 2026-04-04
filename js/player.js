@@ -44,6 +44,9 @@ const Player = (() => {
   // Particles for key pickup burst
   let _keyParticles = [];
 
+  // Ghost mode — allows movement through walls
+  let _ghostMode = false;
+
   function init(col, row, startBombs) {
     _col = col;
     _row = row;
@@ -68,6 +71,8 @@ const Player = (() => {
   function getPx()       { return _px; }
   function getPy()       { return _py; }
   function getBombAmmo() { return _bombAmmo; }
+  function setGhostMode(enabled) { _ghostMode = enabled; }
+  function isGhostMode()         { return _ghostMode; }
 
   function addBombAmmo(n) {
     _bombAmmo = Utils.clamp(_bombAmmo + n, 0, MAX_BOMB_AMMO);
@@ -84,16 +89,21 @@ const Player = (() => {
     const nc = _col + dx;
     const nr = _row + dy;
 
-    if (Tilemap.isDoor(nc, nr)) {
-      if (_keys > 0) {
-        _keys--;
-        Tilemap.openDoor(nc, nr);
-        if (onOpenDoor) onOpenDoor(nc, nr);
+    if (_ghostMode) {
+      // Ghost mode: only block movement at map boundaries
+      if (nc < 0 || nr < 0 || nc >= Tilemap.cols() || nr >= Tilemap.rows()) return;
+    } else {
+      if (Tilemap.isDoor(nc, nr)) {
+        if (_keys > 0) {
+          _keys--;
+          Tilemap.openDoor(nc, nr);
+          if (onOpenDoor) onOpenDoor(nc, nr);
+        }
+        return; // door blocks movement regardless
       }
-      return; // door blocks movement regardless
-    }
 
-    if (!Tilemap.isPassable(nc, nr)) return; // wall
+      if (!Tilemap.isPassable(nc, nr)) return; // wall
+    }
 
     // Start movement
     _facing = Math.atan2(dy, dx);
@@ -332,6 +342,7 @@ const Player = (() => {
     init, update, draw,
     tryMove, isMoving,
     getKeys, getCol, getRow, getPx, getPy,
-    getBombAmmo, addBombAmmo, useBomb
+    getBombAmmo, addBombAmmo, useBomb,
+    setGhostMode, isGhostMode
   };
 })();

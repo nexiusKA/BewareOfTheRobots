@@ -128,8 +128,12 @@ const UI = (() => {
   let _hudTotalLevels = 1;
   let _hudBombs = 0;
   let _fogEnabled = false;
+  let _ghostEnabled = false;
+  let _debugEnabled = false;
 
-  function setFogMode(enabled) { _fogEnabled = enabled; }
+  function setFogMode(enabled)   { _fogEnabled = enabled; }
+  function setGhostMode(enabled) { _ghostEnabled = enabled; }
+  function setDebugMode(enabled) { _debugEnabled = enabled; }
 
   function setHUD(level, totalLevels, keys, bombs) {
     _hudLevel = level;
@@ -211,13 +215,33 @@ const UI = (() => {
     const bombDots  = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
     ctx.fillText(`💣 ${bombDots}`, centerX + 60, y0 + barH / 2);
 
-    // Hints — right-aligned
-    ctx.fillStyle   = `${accent}72`;
+    // Hints — right-aligned, two lines
     ctx.shadowBlur  = 0;
     ctx.textAlign   = 'right';
-    ctx.font        = '11px Courier New';
-    const fogHint   = _fogEnabled ? '  [F] FOG ON' : '';
-    ctx.fillText(`[R] RESTART  [I] INFO${fogHint}`, canvasW - pad, y0 + barH / 2);
+
+    // Primary shortcuts (always visible)
+    ctx.font      = '11px Courier New';
+    ctx.fillStyle = `${accent}72`;
+    ctx.fillText('[R] RESTART  [I] INFO', canvasW - pad, y0 + barH / 2 - 6);
+
+    // Mode shortcuts — draw right-to-left so we can vary colour per button
+    const modeY = y0 + barH / 2 + 8;
+    ctx.font = '9px Courier New';
+    let rx = canvasW - pad;
+
+    const modeBtns = [
+      { label: _debugEnabled ? '[#] DBG ON' : '[#] DBG',   active: _debugEnabled },
+      { label: _ghostEnabled ? '[G] GHOST ON' : '[G] GHOST', active: _ghostEnabled },
+      { label: _fogEnabled   ? '[F] FOG ON'  : '[F] FOG',  active: _fogEnabled   },
+    ];
+    for (const btn of modeBtns) {
+      const w = ctx.measureText(btn.label).width;
+      ctx.fillStyle   = btn.active ? accent : `${accent}52`;
+      ctx.shadowBlur  = btn.active ? 4 : 0;
+      ctx.shadowColor = accent;
+      ctx.fillText(btn.label, rx, modeY);
+      rx -= w + 10;
+    }
 
     ctx.shadowBlur   = 0;
     ctx.textBaseline = 'alphabetic';
@@ -389,7 +413,7 @@ const UI = (() => {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
     showInfo, hideInfo, isInfoVisible,
     setTheme, setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
-    setFogMode,
+    setFogMode, setGhostMode, setDebugMode,
     update, drawHUD, drawScanlines, drawVignette, drawDangerWarning,
     drawMinimap, updateMinimap
   };
