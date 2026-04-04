@@ -182,13 +182,17 @@ const EnemyManager = (() => {
     return Utils.clamp(maxThreat, 0, 1);
   }
 
+  function _isEnemyVisible(e) {
+    return FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS));
+  }
+
   function draw(ctx) {
     for (const e of _enemies) {
-      if (!FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS))) continue;
+      if (!_isEnemyVisible(e)) continue;
       _drawVisionCone(ctx, e);
     }
     for (const e of _enemies) {
-      if (!FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS))) continue;
+      if (!_isEnemyVisible(e)) continue;
       _drawEnemy(ctx, e);
     }
   }
