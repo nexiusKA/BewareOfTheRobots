@@ -34,6 +34,9 @@ const Player = (() => {
   // Particles for step effect
   let _stepParticles = [];
 
+  // Particles for key pickup burst
+  let _keyParticles = [];
+
   function init(col, row) {
     _col = col;
     _row = row;
@@ -47,6 +50,7 @@ const Player = (() => {
     _facing = 0;
     _bobTimer = 0;
     _stepParticles = [];
+    _keyParticles = [];
   }
 
   function getKeys() { return _keys; }
@@ -102,6 +106,24 @@ const Player = (() => {
     }
   }
 
+  function _spawnKeyParticles(px, py) {
+    const colors = ['#ffee00', '#ffffff', '#ffe880', '#ffcc00', '#fffacd'];
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+      const speed = 50 + Math.random() * 100;
+      const life = 0.45 + Math.random() * 0.35;
+      _keyParticles.push({
+        x: px, y: py,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life,
+        maxLife: life,
+        size: 3 + Math.random() * 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      });
+    }
+  }
+
   function update(dt, onCollect, onExit) {
     _bobTimer += dt;
 
@@ -111,9 +133,22 @@ const Player = (() => {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.life -= dt;
-      p.vx *= 0.85;
-      p.vy *= 0.85;
+      const damp = Math.pow(0.85, dt * 60);
+      p.vx *= damp;
+      p.vy *= damp;
       if (p.life <= 0) _stepParticles.splice(i, 1);
+    }
+
+    // Update key pickup particles
+    for (let i = _keyParticles.length - 1; i >= 0; i--) {
+      const p = _keyParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      const damp = Math.pow(0.90, dt * 60);
+      p.vx *= damp;
+      p.vy *= damp;
+      if (p.life <= 0) _keyParticles.splice(i, 1);
     }
 
     if (_moving) {
@@ -133,6 +168,7 @@ const Player = (() => {
         if (Tilemap.isKey(_col, _row)) {
           _keys++;
           Tilemap.removeKey(_col, _row);
+          _spawnKeyParticles(_tx, _ty);
           if (onCollect) onCollect(_col, _row);
         }
         if (Tilemap.isExit(_col, _row)) {
@@ -150,6 +186,24 @@ const Player = (() => {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // Key pickup burst particles
+    if (_keyParticles.length > 0) {
+      ctx.save();
+      for (const p of _keyParticles) {
+        const alpha = p.life / p.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#ffee00';
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.4 + alpha * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+      ctx.restore();
     }
 
     const x = _px;

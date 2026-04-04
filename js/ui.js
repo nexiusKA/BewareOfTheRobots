@@ -94,6 +94,11 @@ const UI = (() => {
 
   function update(dt) {
     if (_hudFlash > 0) _hudFlash -= dt;
+    if (_dangerLevel >= DANGER_THRESHOLD) {
+      _dangerPulse += dt;
+    } else {
+      _dangerPulse = 0;
+    }
   }
 
   function drawHUD(ctx, canvasW, canvasH) {
@@ -163,9 +168,40 @@ const UI = (() => {
     ctx.fillRect(0, 0, w, h);
   }
 
+  // ── Danger text warning ──────────────────────────────────
+  const DANGER_THRESHOLD = 0.65;
+  let _dangerLevel  = 0;
+  let _dangerPulse  = 0;
+
+  function setDanger(threat) {
+    _dangerLevel = threat;
+  }
+
+  function drawDangerWarning(ctx, w, h) {
+    if (_dangerLevel < DANGER_THRESHOLD) {
+      return;
+    }
+    const fadeIn  = Utils.clamp((_dangerLevel - DANGER_THRESHOLD) / (1 - DANGER_THRESHOLD), 0, 1);
+    const pulse   = (Math.sin(_dangerPulse * 9) + 1) / 2; // 0-1 oscillation
+    const alpha   = fadeIn * (0.55 + pulse * 0.45);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 13px Courier New';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowBlur = 10 + pulse * 10;
+    ctx.shadowColor = '#ff0000';
+    ctx.fillStyle = '#ff2244';
+    ctx.fillText('⚠  DANGER  ⚠', w / 2, 56);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
   return {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
-    setHUD, flashKeyCollect, setVignette,
-    update, drawHUD, drawScanlines, drawVignette
+    setHUD, flashKeyCollect, setVignette, setDanger,
+    update, drawHUD, drawScanlines, drawVignette, drawDangerWarning
   };
 })();

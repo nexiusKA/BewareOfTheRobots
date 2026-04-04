@@ -94,6 +94,10 @@ const Game = (() => {
     _timeScale = 1.0;
     _targetTimeScale = 1.0;
     _failFlash = 0;
+    _shakeDur = 0;
+    _shakeX = 0;
+    _shakeY = 0;
+    _threat = 0;
   }
 
   function _onKeyCollect() {
@@ -126,6 +130,7 @@ const Game = (() => {
     if (_state !== STATE.PLAYING) return;
     _state = STATE.FAIL;
     _failFlash = 0.7;
+    _shakeDur = SHAKE_DURATION;
     UI.showGameOver(() => {
       UI.hide();
       _startLevel(_currentLevel);
@@ -167,7 +172,20 @@ const Game = (() => {
       }
     }
 
-    if (_state !== STATE.PLAYING) return;
+    if (_state !== STATE.PLAYING) {
+      // Still update shake even after detection so it feels dramatic
+      if (_shakeDur > 0) {
+        _shakeDur -= rawDt;
+        const amp = SHAKE_AMP * (_shakeDur / SHAKE_DURATION);
+        _shakeX = (Math.random() * 2 - 1) * amp;
+        _shakeY = (Math.random() * 2 - 1) * amp;
+      } else {
+        _shakeDur = 0;
+        _shakeX = 0;
+        _shakeY = 0;
+      }
+      return;
+    }
 
     // Tilemap animation
     Tilemap.update(dt);
@@ -189,17 +207,30 @@ const Game = (() => {
     }
 
     // Near-detection slow-mo
-    const threat = EnemyManager.getNearAlert(Player.getPx(), Player.getPy());
-    if (threat > SLOWMO_THRESHOLD) {
+    _threat = EnemyManager.getNearAlert(Player.getPx(), Player.getPy());
+    if (_threat > SLOWMO_THRESHOLD) {
       _targetTimeScale = Utils.lerp(1.0, SLOWMO_MIN,
-        (threat - SLOWMO_THRESHOLD) / (1 - SLOWMO_THRESHOLD));
+        (_threat - SLOWMO_THRESHOLD) / (1 - SLOWMO_THRESHOLD));
     } else {
       _targetTimeScale = 1.0;
     }
     _timeScale = Utils.lerp(_timeScale, _targetTimeScale, rawDt * 5);
 
-    // Vignette feedback
-    UI.setVignette(threat * 0.9);
+    // Vignette + danger warning feedback
+    UI.setVignette(_threat * 0.9);
+    UI.setDanger(_threat);
+
+    // Camera shake decay (runs on real time so shake feels physical)
+    if (_shakeDur > 0) {
+      _shakeDur -= rawDt;
+      const amp = SHAKE_AMP * (_shakeDur / SHAKE_DURATION);
+      _shakeX = (Math.random() * 2 - 1) * amp;
+      _shakeY = (Math.random() * 2 - 1) * amp;
+    } else {
+      _shakeDur = 0;
+      _shakeX = 0;
+      _shakeY = 0;
+    }
 
     // Fail flash decay
     if (_failFlash > 0) _failFlash -= rawDt;
@@ -217,9 +248,9 @@ const Game = (() => {
     // Clear
     ctx.clearRect(0, 0, W, H);
 
-    // Map area (below HUD)
+    // Map area (below HUD) — apply camera shake offset
     ctx.save();
-    ctx.translate(_camX, _camY);
+    ctx.translate(_camX + _shakeX, _camY + _shakeY);
     Tilemap.draw(ctx);
     EnemyManager.draw(ctx);
     Player.draw(ctx);
@@ -233,6 +264,7 @@ const Game = (() => {
 
     // Post-process
     UI.drawVignette(ctx, W, H);
+    UI.drawDangerWarning(ctx, W, H);
     UI.drawScanlines(ctx, W, H);
     UI.drawHUD(ctx, W, H);
 
