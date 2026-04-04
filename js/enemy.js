@@ -695,13 +695,34 @@ const EnemyManager = (() => {
 
   let _enemies = [];
 
+  function _createEnemy(def) {
+    if (def.type === TYPE.GUARD_BOT)   return new GuardBot(def);
+    if (def.type === TYPE.SCANNER_BOT) return new ScannerBot(def);
+    return new BaseEnemy(def);
+  }
+
   function init(defs) {
-    _enemies = defs.map(def => {
-      if (def.type === TYPE.GUARD_BOT)   return new GuardBot(def);
-      if (def.type === TYPE.SCANNER_BOT) return new ScannerBot(def);
-      return new BaseEnemy(def);
-    });
+    _enemies = defs.map(_createEnemy);
     _caught  = false;
+  }
+
+  // Adds a single enemy to the manager at runtime.
+  function addEnemy(def) {
+    _enemies.push(_createEnemy(def));
+  }
+
+  // Removes all permanently destroyed enemies from the list.
+  // Call this explicitly when you want to compact the enemy list (e.g. between
+  // levels or before serialising). Wreckage is intentionally kept alive until
+  // this is called so that it remains visible to the player after a bomb detonation.
+  function removeDestroyed() {
+    _enemies = _enemies.filter(e => e.state !== STATE.DESTROYED);
+  }
+
+  // Returns true if at least one active enemy is currently in ALERT state.
+  // Use this as a hook for a global alert system (music change, UI overlay, etc.).
+  function isAnyAlert() {
+    return _enemies.some(e => e.state === STATE.ALERT);
   }
 
   function wasDetected() { return _caught; }
@@ -786,6 +807,7 @@ const EnemyManager = (() => {
 
   return {
     init, update, draw,
+    addEnemy, removeDestroyed, isAnyAlert,
     wasDetected, getNearAlert, getEnemies,
     destroyEnemiesInRadius, killEnemiesInRadius,
     TYPE, STATE,
