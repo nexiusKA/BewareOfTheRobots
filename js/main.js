@@ -63,13 +63,16 @@
   _setupDpadButton('dpad-right', 'ArrowRight');
   _setupDpadButton('dpad-down',  'ArrowDown');
 
-  // Bomb button — single press only (no hold-repeat; one bomb per tap)
-  function _setupActionButton(id, code) {
+  // Action button — single press only (no hold-repeat; one action per tap).
+  // Pass an optional keyChar to also fire pressVirtualKey (for actions that
+  // use Input.isPressedKey() instead of Input.isPressed(), e.g. debug '#').
+  function _setupActionButton(id, code, keyChar) {
     const btn = document.getElementById(id);
     if (!btn) return;
     function onPress(e) {
       e.preventDefault();
-      Input.pressVirtual(code);
+      if (code)    Input.pressVirtual(code);
+      if (keyChar) Input.pressVirtualKey(keyChar);
       btn.classList.add('dpad-pressed');
     }
     function onRelease() {
@@ -83,6 +86,8 @@
   _setupActionButton('dpad-bomb',    'Space');
   _setupActionButton('dpad-info',    'KeyI');
   _setupActionButton('dpad-restart', 'KeyR');
+  _setupActionButton('dpad-ghost',   'KeyG');
+  _setupActionButton('dpad-debug',   null, '#');
 
   // ── Mobile D-pad menu toggle ───────────────────────────────
   const _dpad = document.getElementById('dpad');

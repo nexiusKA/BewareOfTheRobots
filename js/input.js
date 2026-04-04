@@ -91,5 +91,11 @@ const Input = (() => {
     _justPressed[code] = true;
   }
 
-  return { init, flush, isDown, isPressed, isReleased, isPressedKey, getMoveDelta, getHeldDir, pressVirtual };
+  // Simulate a single-frame key press by key character (e.g. '#').
+  // Use this when game logic checks isPressedKey() rather than isPressed().
+  function pressVirtualKey(key) {
+    _justPressedKeys[key] = true;
+  }
+
+  return { init, flush, isDown, isPressed, isReleased, isPressedKey, getMoveDelta, getHeldDir, pressVirtual, pressVirtualKey };
 })();

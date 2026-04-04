@@ -354,9 +354,9 @@ body {
   left: 50%;
   transform: translateX(-50%);
   grid-template-areas:
-    ". up . info"
+    "ghost up . info"
     "left . right bomb"
-    ". down . restart";
+    "debug down . restart";
   grid-template-columns: repeat(4, 64px);
   grid-template-rows: repeat(3, 64px);
   gap: 5px;
@@ -378,6 +378,8 @@ body {
 #dpad-bomb    { grid-area: bomb; }
 #dpad-info    { grid-area: info; }
 #dpad-restart { grid-area: restart; }
+#dpad-ghost   { grid-area: ghost; }
+#dpad-debug   { grid-area: debug; }
 
 .dpad-btn {
   background: rgba(0, 255, 204, 0.10);
@@ -429,7 +431,35 @@ body {
   box-shadow: 0 0 12px rgba(102, 204, 255, 0.55);
 }
 
-/* Restart button — yellow/amber accent */
+/* Ghost mode button — purple accent */
+.dpad-ghost-btn {
+  color: #cc88ff;
+  border-color: rgba(204, 136, 255, 0.45);
+  background: rgba(204, 136, 255, 0.10);
+  font-size: 1.4rem;
+}
+
+.dpad-ghost-btn:active,
+.dpad-ghost-btn.dpad-pressed {
+  background: rgba(204, 136, 255, 0.28);
+  box-shadow: 0 0 12px rgba(204, 136, 255, 0.55);
+}
+
+/* Debug button — red/magenta accent */
+.dpad-debug-btn {
+  color: #ff4477;
+  border-color: rgba(255, 68, 119, 0.45);
+  background: rgba(255, 68, 119, 0.10);
+  font-size: 1.3rem;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+}
+
+.dpad-debug-btn:active,
+.dpad-debug-btn.dpad-pressed {
+  background: rgba(255, 68, 119, 0.28);
+  box-shadow: 0 0 12px rgba(255, 68, 119, 0.55);
+}
 .dpad-restart-btn {
   color: #ffdd44;
   border-color: rgba(255, 221, 68, 0.45);
