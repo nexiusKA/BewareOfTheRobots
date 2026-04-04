@@ -16,6 +16,77 @@
         <button id="overlay-btn"></button>
       </div>
     </div>
+    <!-- Info / manual overlay — toggled with [I] key -->
+    <div id="info-overlay" class="hidden">
+      <div id="info-content">
+        <h2 id="info-title">★ MISSION BRIEFING ★</h2>
+
+        <div class="info-section">
+          <div class="info-header">CONTROLS</div>
+          <table class="info-table">
+            <tr><td>[WASD / ↑↓←→]</td><td>Move one tile</td></tr>
+            <tr><td>[SPACE]</td><td>Place bomb at current position</td></tr>
+            <tr><td>[R]</td><td>Restart the current level</td></tr>
+            <tr><td>[I] / [ESC]</td><td>Toggle this info screen</td></tr>
+            <tr><td>[#]</td><td>Debug mode — disables enemy detection</td></tr>
+          </table>
+        </div>
+
+        <div class="info-section">
+          <div class="info-header">OBJECTIVES</div>
+          <ul class="info-list">
+            <li>⬡ Collect all <b>KEYS</b> to unlock <b>DOORS</b> blocking the path</li>
+            <li>▶ Reach the <b>EXIT</b> tile to complete the sector</li>
+            <li>◆ Pick up <b>AMMO</b> crates to gain extra bombs</li>
+            <li>💣 Detonate <b>BOMBS</b> (1.2 s fuse) to destroy enemies in blast radius</li>
+          </ul>
+        </div>
+
+        <div class="info-section">
+          <div class="info-header">MECHANICS</div>
+          <ul class="info-list">
+            <li>Time <b>slows down</b> when you are near an enemy's vision cone — use it to think</li>
+            <li><b>⚠ DANGER</b> warning pulses on screen when detection risk is very high</li>
+            <li>A <b>red vignette</b> intensifies around the screen as threat increases</li>
+            <li>A <b>1.5 s grace period</b> prevents detection at the start of every level</li>
+            <li>Enemies destroyed by bombs are <b>permanently removed</b> from that level</li>
+          </ul>
+        </div>
+
+        <div class="info-section">
+          <div class="info-header">ENEMY TYPES</div>
+
+          <div class="enemy-card patrol-card">
+            <div class="enemy-name">▪ PATROL UNIT <span class="enemy-tag">(orange)</span></div>
+            <div class="enemy-stats">MEDIUM SPEED &nbsp;|&nbsp; STANDARD CONE &nbsp;|&nbsp; MEDIUM RANGE</div>
+            <p>The standard guard robot. Patrols fixed waypoints with a forward-facing
+            amber vision cone. Moderate speed and detection range. The most common
+            enemy type — duck behind walls or time your moves when it faces away from you.</p>
+          </div>
+
+          <div class="enemy-card scanner-card">
+            <div class="enemy-name">▪ SCANNER UNIT <span class="enemy-tag">(blue)</span></div>
+            <div class="enemy-stats">SLOW SPEED &nbsp;|&nbsp; SWEEPING WIDE CONE &nbsp;|&nbsp; SHORT RANGE</div>
+            <p>A surveillance bot with a wide sensor cone that oscillates ±60° side-to-side
+            as it patrols. Its sweep is independent of movement direction, making it
+            unpredictable. Short range but very hard to sneak past — wait for the sweep to
+            pass before advancing. First encountered in Sector 3.</p>
+          </div>
+
+          <div class="enemy-card hunter-card">
+            <div class="enemy-name">▪ HUNTER UNIT <span class="enemy-tag">(crimson)</span></div>
+            <div class="enemy-stats">HIGH SPEED &nbsp;|&nbsp; NARROW LASER BEAM &nbsp;|&nbsp; LONG RANGE</div>
+            <p>A fast pursuit robot with a long-range razor-thin vision beam. It moves
+            significantly faster than other units and can spot you from across the entire
+            room. Its distinctive diamond-shaped body and elongated red laser eye make it
+            easy to identify. Stay completely out of its direct line of fire.
+            Appears from Sector 6 onwards.</p>
+          </div>
+        </div>
+
+        <button id="info-close-btn">[ CLOSE &nbsp; (I) ]</button>
+      </div>
+    </div>
   </div>
 
   <script src="js/utils.js"></script>

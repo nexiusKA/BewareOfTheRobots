@@ -245,15 +245,16 @@ const Levels = (() => {
         visionRange: 185,
         visionAngle: Math.PI / 3,
       },
-      // Lower mid cross patrol — stays within rows 7-9
+      // Lower mid scanner — first scanner unit introduced here
       {
+        type: 'scanner',
         patrol: [
           { col: 19, row: 9 },
           { col: 1, row: 9 },
         ],
-        speed: 2.1,
-        visionRange: 175,
-        visionAngle: Math.PI / 2.8,
+        speed: 1.0,
+        visionRange: 135,
+        visionAngle: Math.PI / 2,
       },
       // Bottom zone key guardian — starts at far right, away from player
       {
@@ -308,11 +309,13 @@ const Levels = (() => {
         visionRange: 185,
         visionAngle: Math.PI / 2.8,
       },
+      // Scanner guarding the middle zone
       {
+        type: 'scanner',
         patrol: [{ col: 21, row: 9 }, { col: 1, row: 9 }],
-        speed: 2.3,
-        visionRange: 188,
-        visionAngle: Math.PI / 3,
+        speed: 1.0,
+        visionRange: 140,
+        visionAngle: Math.PI / 2,
       },
       {
         patrol: [{ col: 21, row: 15 }, { col: 5, row: 15 }],
@@ -351,35 +354,42 @@ const Levels = (() => {
     ],
     playerStart: { col: 1, row: 15 },
     enemies: [
+      // Top patrol
       {
         patrol: [{ col: 1, row: 1 }, { col: 20, row: 1 }],
         speed: 2.6,
         visionRange: 195,
         visionAngle: Math.PI / 3,
       },
+      // Upper left patrol
       {
         patrol: [{ col: 1, row: 3 }, { col: 10, row: 3 }, { col: 10, row: 5 }, { col: 1, row: 5 }],
         speed: 2.4,
         visionRange: 180,
         visionAngle: Math.PI / 2.8,
       },
+      // Upper right scanner
       {
+        type: 'scanner',
         patrol: [{ col: 12, row: 3 }, { col: 21, row: 3 }, { col: 21, row: 5 }, { col: 12, row: 5 }],
-        speed: 2.5,
-        visionRange: 175,
-        visionAngle: Math.PI / 2.5,
+        speed: 1.1,
+        visionRange: 138,
+        visionAngle: Math.PI / 2,
       },
+      // Mid patrol
       {
         patrol: [{ col: 21, row: 7 }, { col: 1, row: 7 }],
         speed: 2.3,
         visionRange: 188,
         visionAngle: Math.PI / 3,
       },
+      // Bottom scanner
       {
+        type: 'scanner',
         patrol: [{ col: 21, row: 13 }, { col: 5, row: 13 }],
-        speed: 2.7,
-        visionRange: 170,
-        visionAngle: Math.PI / 2.8,
+        speed: 1.0,
+        visionRange: 135,
+        visionAngle: Math.PI / 2,
       },
     ],
   };
@@ -414,11 +424,13 @@ const Levels = (() => {
     ],
     playerStart: { col: 1, row: 17 },
     enemies: [
+      // Top hunter — first hunter unit
       {
+        type: 'hunter',
         patrol: [{ col: 1, row: 1 }, { col: 22, row: 1 }],
-        speed: 2.8,
-        visionRange: 200,
-        visionAngle: Math.PI / 3,
+        speed: 3.2,
+        visionRange: 240,
+        visionAngle: Math.PI / 7,
       },
       {
         patrol: [{ col: 1, row: 3 }, { col: 11, row: 3 }, { col: 11, row: 5 }, { col: 1, row: 5 }],
@@ -426,11 +438,13 @@ const Levels = (() => {
         visionRange: 185,
         visionAngle: Math.PI / 2.8,
       },
+      // Scanner in the upper-right zone
       {
+        type: 'scanner',
         patrol: [{ col: 13, row: 3 }, { col: 23, row: 3 }, { col: 23, row: 5 }, { col: 13, row: 5 }],
-        speed: 2.7,
-        visionRange: 180,
-        visionAngle: Math.PI / 2.5,
+        speed: 1.1,
+        visionRange: 138,
+        visionAngle: Math.PI / 2,
       },
       {
         patrol: [{ col: 23, row: 7 }, { col: 1, row: 7 }],
@@ -483,11 +497,13 @@ const Levels = (() => {
     ],
     playerStart: { col: 1, row: 17 },
     enemies: [
+      // Top hunter
       {
+        type: 'hunter',
         patrol: [{ col: 1, row: 1 }, { col: 22, row: 1 }],
-        speed: 3.0,
-        visionRange: 200,
-        visionAngle: Math.PI / 3,
+        speed: 3.2,
+        visionRange: 248,
+        visionAngle: Math.PI / 7,
       },
       {
         patrol: [{ col: 1, row: 3 }, { col: 23, row: 3 }],
@@ -495,11 +511,13 @@ const Levels = (() => {
         visionRange: 188,
         visionAngle: Math.PI / 3,
       },
+      // Scanner sweeping a row
       {
+        type: 'scanner',
         patrol: [{ col: 23, row: 5 }, { col: 1, row: 5 }],
-        speed: 2.9,
-        visionRange: 185,
-        visionAngle: Math.PI / 3,
+        speed: 1.1,
+        visionRange: 138,
+        visionAngle: Math.PI / 2,
       },
       {
         patrol: [{ col: 23, row: 7 }, { col: 1, row: 7 }],
@@ -507,11 +525,13 @@ const Levels = (() => {
         visionRange: 192,
         visionAngle: Math.PI / 3,
       },
+      // Second scanner
       {
+        type: 'scanner',
         patrol: [{ col: 1, row: 9 }, { col: 23, row: 9 }],
-        speed: 2.8,
-        visionRange: 186,
-        visionAngle: Math.PI / 3,
+        speed: 1.0,
+        visionRange: 135,
+        visionAngle: Math.PI / 2,
       },
       {
         patrol: [{ col: 23, row: 17 }, { col: 5, row: 17 }],
@@ -554,11 +574,13 @@ const Levels = (() => {
     ],
     playerStart: { col: 1, row: 19 },
     enemies: [
+      // Hunter at the top
       {
+        type: 'hunter',
         patrol: [{ col: 1, row: 1 }, { col: 22, row: 1 }],
-        speed: 3.2,
-        visionRange: 200,
-        visionAngle: Math.PI / 3,
+        speed: 3.5,
+        visionRange: 252,
+        visionAngle: Math.PI / 7,
       },
       {
         patrol: [{ col: 1, row: 3 }, { col: 23, row: 3 }],
@@ -566,11 +588,13 @@ const Levels = (() => {
         visionRange: 190,
         visionAngle: Math.PI / 3,
       },
+      // Scanner
       {
+        type: 'scanner',
         patrol: [{ col: 23, row: 5 }, { col: 1, row: 5 }],
-        speed: 3.1,
-        visionRange: 185,
-        visionAngle: Math.PI / 3,
+        speed: 1.1,
+        visionRange: 140,
+        visionAngle: Math.PI / 2,
       },
       {
         patrol: [{ col: 1, row: 7 }, { col: 23, row: 7 }],
@@ -578,17 +602,21 @@ const Levels = (() => {
         visionRange: 192,
         visionAngle: Math.PI / 3,
       },
+      // Second hunter in the mid zone
       {
+        type: 'hunter',
         patrol: [{ col: 23, row: 9 }, { col: 1, row: 9 }],
-        speed: 3.0,
-        visionRange: 188,
-        visionAngle: Math.PI / 3,
+        speed: 3.4,
+        visionRange: 248,
+        visionAngle: Math.PI / 7,
       },
+      // Scanner
       {
+        type: 'scanner',
         patrol: [{ col: 1, row: 11 }, { col: 23, row: 11 }],
-        speed: 3.2,
-        visionRange: 185,
-        visionAngle: Math.PI / 3,
+        speed: 1.0,
+        visionRange: 138,
+        visionAngle: Math.PI / 2,
       },
       {
         patrol: [{ col: 23, row: 19 }, { col: 5, row: 19 }],
@@ -631,11 +659,13 @@ const Levels = (() => {
     ],
     playerStart: { col: 1, row: 19 },
     enemies: [
+      // Hunter at the top
       {
+        type: 'hunter',
         patrol: [{ col: 1, row: 1 }, { col: 22, row: 1 }],
-        speed: 3.5,
-        visionRange: 205,
-        visionAngle: Math.PI / 3,
+        speed: 3.8,
+        visionRange: 256,
+        visionAngle: Math.PI / 7,
       },
       {
         patrol: [{ col: 1, row: 3 }, { col: 23, row: 3 }],
@@ -643,17 +673,21 @@ const Levels = (() => {
         visionRange: 195,
         visionAngle: Math.PI / 2.8,
       },
+      // Scanner
       {
+        type: 'scanner',
         patrol: [{ col: 23, row: 5 }, { col: 1, row: 5 }],
-        speed: 3.4,
-        visionRange: 190,
-        visionAngle: Math.PI / 2.8,
+        speed: 1.1,
+        visionRange: 140,
+        visionAngle: Math.PI / 2,
       },
+      // Second hunter mid
       {
+        type: 'hunter',
         patrol: [{ col: 1, row: 7 }, { col: 23, row: 7 }],
-        speed: 3.2,
-        visionRange: 195,
-        visionAngle: Math.PI / 3,
+        speed: 3.6,
+        visionRange: 252,
+        visionAngle: Math.PI / 7,
       },
       {
         patrol: [{ col: 23, row: 9 }, { col: 1, row: 9 }],
@@ -661,11 +695,13 @@ const Levels = (() => {
         visionRange: 192,
         visionAngle: Math.PI / 2.8,
       },
+      // Scanner
       {
+        type: 'scanner',
         patrol: [{ col: 1, row: 11 }, { col: 23, row: 11 }],
-        speed: 3.5,
-        visionRange: 188,
-        visionAngle: Math.PI / 2.8,
+        speed: 1.1,
+        visionRange: 142,
+        visionAngle: Math.PI / 2,
       },
       {
         patrol: [{ col: 23, row: 13 }, { col: 1, row: 13 }],
@@ -716,41 +752,52 @@ const Levels = (() => {
     ],
     playerStart: { col: 1, row: 21 },
     enemies: [
+      // Top hunter — elite speed
       {
+        type: 'hunter',
         patrol: [{ col: 1, row: 1 }, { col: 24, row: 1 }],
-        speed: 3.8,
-        visionRange: 210,
-        visionAngle: Math.PI / 3,
+        speed: 4.2,
+        visionRange: 260,
+        visionAngle: Math.PI / 7,
       },
+      // Scanner row 3
       {
+        type: 'scanner',
         patrol: [{ col: 1, row: 3 }, { col: 25, row: 3 }],
-        speed: 3.6,
-        visionRange: 200,
-        visionAngle: Math.PI / 2.8,
+        speed: 1.2,
+        visionRange: 145,
+        visionAngle: Math.PI / 2,
       },
+      // Second hunter
       {
+        type: 'hunter',
         patrol: [{ col: 25, row: 5 }, { col: 1, row: 5 }],
-        speed: 3.7,
-        visionRange: 195,
-        visionAngle: Math.PI / 2.8,
+        speed: 4.0,
+        visionRange: 256,
+        visionAngle: Math.PI / 7,
       },
+      // Patrol
       {
         patrol: [{ col: 1, row: 7 }, { col: 25, row: 7 }],
         speed: 3.5,
         visionRange: 200,
         visionAngle: Math.PI / 3,
       },
+      // Scanner row 9
       {
+        type: 'scanner',
         patrol: [{ col: 25, row: 9 }, { col: 1, row: 9 }],
-        speed: 3.6,
-        visionRange: 195,
-        visionAngle: Math.PI / 2.8,
+        speed: 1.2,
+        visionRange: 145,
+        visionAngle: Math.PI / 2,
       },
+      // Third hunter
       {
+        type: 'hunter',
         patrol: [{ col: 1, row: 11 }, { col: 25, row: 11 }],
-        speed: 3.8,
-        visionRange: 192,
-        visionAngle: Math.PI / 2.8,
+        speed: 4.0,
+        visionRange: 254,
+        visionAngle: Math.PI / 7,
       },
       {
         patrol: [{ col: 25, row: 13 }, { col: 1, row: 13 }],
@@ -758,11 +805,13 @@ const Levels = (() => {
         visionRange: 190,
         visionAngle: Math.PI / 2.5,
       },
+      // Scanner row 17
       {
+        type: 'scanner',
         patrol: [{ col: 1, row: 17 }, { col: 25, row: 17 }],
-        speed: 3.7,
-        visionRange: 188,
-        visionAngle: Math.PI / 2.8,
+        speed: 1.1,
+        visionRange: 142,
+        visionAngle: Math.PI / 2,
       },
       {
         patrol: [{ col: 25, row: 21 }, { col: 5, row: 21 }],
