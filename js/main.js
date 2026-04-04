@@ -81,4 +81,43 @@
     btn.addEventListener('pointerleave',  onRelease);
   }
   _setupActionButton('dpad-bomb', 'Space');
+
+  // ── Mobile D-pad menu toggle ───────────────────────────────
+  const _dpad = document.getElementById('dpad');
+  const MOBILE_KEY = 'dpad_enabled';
+
+  function _isMobileEnabled() {
+    return localStorage.getItem(MOBILE_KEY) === '1';
+  }
+
+  function _syncMobileToggleBtns(enabled) {
+    const label = enabled ? '📱 Mobile Controls: ON' : '📱 Mobile Controls: OFF';
+    document.querySelectorAll('.mobile-toggle-btn').forEach(function (btn) {
+      btn.textContent = label;
+      btn.classList.toggle('mobile-toggle-active', enabled);
+    });
+    if (_dpad) {
+      if (enabled) {
+        _dpad.classList.add('dpad-active');
+      } else {
+        _dpad.classList.remove('dpad-active');
+      }
+    }
+  }
+
+  function _toggleMobile() {
+    const next = !_isMobileEnabled();
+    localStorage.setItem(MOBILE_KEY, next ? '1' : '0');
+    _syncMobileToggleBtns(next);
+  }
+
+  // Apply saved preference on load
+  _syncMobileToggleBtns(_isMobileEnabled());
+
+  // Use event delegation so any current or future .mobile-toggle-btn is handled
+  document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('mobile-toggle-btn')) {
+      _toggleMobile();
+    }
+  });
 })();
