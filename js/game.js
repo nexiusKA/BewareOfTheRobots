@@ -29,10 +29,14 @@ const Game = (() => {
   let _timeScale = 1.0;
   let _targetTimeScale = 1.0;
 
-  // ── Camera offset (center map in canvas) ─────────────────
-  let _camX = 0;
-  let _camY = 0;
-  let _HUD_HEIGHT = 38;
+  // ── Camera offset (viewport scrolling) ──────────────────────
+  const VIEWPORT_COLS = 20;
+  const VIEWPORT_ROWS = 20;
+  const VIEWPORT_W    = VIEWPORT_COLS * Tilemap.TILE_SIZE; // 960 px
+  const VIEWPORT_H    = VIEWPORT_ROWS * Tilemap.TILE_SIZE; // 960 px
+  const _HUD_HEIGHT   = 38; // pixels reserved at top for HUD bar
+  let _camX = 0;  // world-space left edge of viewport
+  let _camY = 0;  // world-space top edge of viewport
 
   // ── Fail flash ───────────────────────────────────────────
   let _failFlash = 0;
@@ -88,15 +92,13 @@ const Game = (() => {
     const def = Levels.get(index);
     if (!def) return false;
 
-    // Resize canvas
-    const mapW = def.cols * Tilemap.TILE_SIZE;
-    const mapH = def.rows * Tilemap.TILE_SIZE;
-    _canvas.width  = mapW;
-    _canvas.height = mapH + _HUD_HEIGHT;
+    // Fixed viewport canvas — game always shows VIEWPORT_COLS×VIEWPORT_ROWS tiles
+    _canvas.width  = VIEWPORT_W;
+    _canvas.height = VIEWPORT_H + _HUD_HEIGHT;
 
-    // Camera — map fills canvas exactly, offset by HUD
+    // Camera starts at top-left of map (updated each frame to follow player)
     _camX = 0;
-    _camY = _HUD_HEIGHT;
+    _camY = 0;
 
     // Init subsystems
     Tilemap.init(def.cols, def.rows, _randomizeKeyPositions(def));
@@ -126,6 +128,7 @@ const Game = (() => {
   function _onKeyCollect() {
     UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
     UI.flashKeyCollect();
+    Sound.keyPickup();
   }
 
   // ── Bomb placement flash (brief screen flash on placement) ─
@@ -253,6 +256,7 @@ const Game = (() => {
     if (Input.isPressed('Space') && Player.getBombAmmo() > 0) {
       Player.useBomb();
       BombManager.placeBomb(Player.getPx(), Player.getPy());
+      Sound.bombPlace();
       _bombPlaceFlash = 0.12;
       UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
     }
@@ -299,6 +303,14 @@ const Game = (() => {
       _shakeY = 0;
     }
 
+    // Camera — centre on player, clamped to map bounds.
+    // If the map is smaller than the viewport, the max clamp collapses to 0
+    // so the camera stays at the top-left corner (map shown from origin).
+    const mapW = Tilemap.pixelWidth();
+    const mapH = Tilemap.pixelHeight();
+    _camX = Utils.clamp(Player.getPx() - VIEWPORT_W / 2, 0, Math.max(0, mapW - VIEWPORT_W));
+    _camY = Utils.clamp(Player.getPy() - VIEWPORT_H / 2, 0, Math.max(0, mapH - VIEWPORT_H));
+
     // Fail flash decay
     if (_failFlash > 0) _failFlash -= rawDt;
     if (_bombPlaceFlash > 0) _bombPlaceFlash -= rawDt;
@@ -313,12 +325,16 @@ const Game = (() => {
     const W = _canvas.width;
     const H = _canvas.height;
 
-    // Clear
-    ctx.clearRect(0, 0, W, H);
+    // Dark background for map region (shown around edges if map is smaller than viewport)
+    ctx.fillStyle = '#0a0a18';
+    ctx.fillRect(0, _HUD_HEIGHT, W, H - _HUD_HEIGHT);
 
-    // Map area (below HUD) — apply camera shake offset
+    // Map area — clip to viewport, then translate world coords into screen space
     ctx.save();
-    ctx.translate(_camX + _shakeX, _camY + _shakeY);
+    ctx.beginPath();
+    ctx.rect(0, _HUD_HEIGHT, VIEWPORT_W, VIEWPORT_H);
+    ctx.clip();
+    ctx.translate(-_camX + _shakeX, _HUD_HEIGHT - _camY + _shakeY);
     Tilemap.draw(ctx);
     BombManager.draw(ctx);
     EnemyManager.draw(ctx);
