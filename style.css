@@ -354,10 +354,10 @@ body {
   left: 50%;
   transform: translateX(-50%);
   grid-template-areas:
-    ". up ."
-    "left . right"
-    ". down .";
-  grid-template-columns: repeat(3, 64px);
+    ". up . ."
+    "left . right bomb"
+    ". down . .";
+  grid-template-columns: repeat(4, 64px);
   grid-template-rows: repeat(3, 64px);
   gap: 5px;
   user-select: none;
@@ -372,6 +372,7 @@ body {
 #dpad-left  { grid-area: left; }
 #dpad-right { grid-area: right; }
 #dpad-down  { grid-area: down; }
+#dpad-bomb  { grid-area: bomb; }
 
 .dpad-btn {
   background: rgba(0, 255, 204, 0.10);
@@ -393,4 +394,18 @@ body {
 .dpad-btn.dpad-pressed {
   background: rgba(0, 255, 204, 0.28);
   box-shadow: 0 0 12px rgba(0, 255, 204, 0.55);
+}
+
+/* Bomb action button — orange accent */
+.dpad-bomb-btn {
+  color: #ff9900;
+  border-color: rgba(255, 153, 0, 0.5);
+  background: rgba(255, 153, 0, 0.12);
+  font-size: 1.8rem;
+}
+
+.dpad-bomb-btn:active,
+.dpad-bomb-btn.dpad-pressed {
+  background: rgba(255, 153, 0, 0.32);
+  box-shadow: 0 0 14px rgba(255, 153, 0, 0.65);
 }

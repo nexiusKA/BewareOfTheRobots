@@ -62,4 +62,23 @@
   _setupDpadButton('dpad-left',  'ArrowLeft');
   _setupDpadButton('dpad-right', 'ArrowRight');
   _setupDpadButton('dpad-down',  'ArrowDown');
+
+  // Bomb button — single press only (no hold-repeat; one bomb per tap)
+  function _setupActionButton(id, code) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    function onPress(e) {
+      e.preventDefault();
+      Input.pressVirtual(code);
+      btn.classList.add('dpad-pressed');
+    }
+    function onRelease() {
+      btn.classList.remove('dpad-pressed');
+    }
+    btn.addEventListener('pointerdown',   onPress);
+    btn.addEventListener('pointerup',     onRelease);
+    btn.addEventListener('pointercancel', onRelease);
+    btn.addEventListener('pointerleave',  onRelease);
+  }
+  _setupActionButton('dpad-bomb', 'Space');
 })();
