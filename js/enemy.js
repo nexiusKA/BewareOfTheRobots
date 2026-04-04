@@ -36,9 +36,11 @@ const EnemyManager = (() => {
 
   // ── Type constants ───────────────────────────────────────────────────────
   const TYPE = {
-    PATROL:      'patrol',
-    SCANNER:     'scanner',
-    HUNTER:      'hunter',
+    // Legacy types — kept for backward compatibility; BaseEnemy still handles them.
+    PATROL:  'patrol',
+    SCANNER: 'scanner',
+    HUNTER:  'hunter',
+    // Named enemy types (preferred for new code)
     GUARD_BOT:   'guard_bot',    // balanced speed, medium cone (red)
     SCANNER_BOT: 'scanner_bot',  // slower, wide long-range cone (blue)
   };
@@ -528,8 +530,8 @@ const EnemyManager = (() => {
       super({
         type:        TYPE.GUARD_BOT,
         patrol:      def.patrol,
-        speed:       def.speed       != null ? def.speed       : 1.75,
-        visionRange: def.visionRange != null ? def.visionRange : 190,
+        speed:       def.speed       != null ? def.speed       : 1.60,
+        visionRange: def.visionRange != null ? def.visionRange : 185,
         visionAngle: def.visionAngle != null ? def.visionAngle : Math.PI / 3,
         waitDuration: def.waitDuration != null ? def.waitDuration : 0.4,
         // detectTimeMultiplier defaults to 1.0 (standard)
@@ -549,8 +551,8 @@ const EnemyManager = (() => {
       super({
         type:                 TYPE.SCANNER_BOT,
         patrol:               def.patrol,
-        speed:                def.speed        != null ? def.speed        : 1.3,
-        visionRange:          def.visionRange  != null ? def.visionRange  : 280,
+        speed:                def.speed        != null ? def.speed        : 1.25,
+        visionRange:          def.visionRange  != null ? def.visionRange  : 260,
         visionAngle:          def.visionAngle  != null ? def.visionAngle  : Math.PI / 2,
         waitDuration:         def.waitDuration != null ? def.waitDuration : 0.5,
         detectTimeMultiplier: 0.6,   // fills 1.67× faster than GuardBot
