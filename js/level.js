@@ -34,229 +34,230 @@ const Levels = (() => {
    *   Separator  (row 2)       → door
    *   ...inner zones...
    *   Bottom zone (last rows)  → player start + keys
+   *
+   * Enemy patrols never start at the player spawn tile.
    */
 
-  // ── Level 1 (13×9) — 1 key, 1 door ────────────────────────
-  // Player: (1,7)   Key: (3,6)   Door: (6,2)   Exit: (11,1)
+  // ── Level 1 (17×11) — 1 key, 1 door ───────────────────────
+  // Player: (1,9)   Key: (3,9)   Door: (8,2)   Exit: (15,1)
   const level1 = {
-    cols: 13,
-    rows: 9,
-    map: [
-      W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
-      W,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1 — exit at (11,1)
-      W,W,W,W,W,W,D,W,W,W,W,W,W,   // row 2 — door at (6,2)
-      W,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
-      W,_,W,W,W,_,W,W,W,_,W,_,W,   // row 4
-      W,_,W,_,_,_,W,_,_,_,W,_,W,   // row 5
-      W,_,W,K,W,_,W,_,W,_,_,_,W,   // row 6 — key at (3,6)
-      W,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7 — player at (1,7)
-      W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 8
-    ],
-    playerStart: { col: 1, row: 7 },
-    enemies: [
-      // Guard patrols the top zone (visible from door approach)
-      {
-        patrol: [
-          { col: 1, row: 1 },
-          { col: 10, row: 1 },
-        ],
-        speed: 1.6,
-        visionRange: 168,
-        visionAngle: Math.PI / 3,
-      },
-      // Guard patrols the bottom open corridor (row 7)
-      {
-        patrol: [
-          { col: 1, row: 7 },
-          { col: 11, row: 7 },
-        ],
-        speed: 1.4,
-        visionRange: 144,
-        visionAngle: Math.PI / 3,
-      },
-      // Roving guard in bottom maze
-      {
-        patrol: [
-          { col: 6, row: 5 },
-          { col: 6, row: 7 },
-          { col: 9, row: 7 },
-          { col: 9, row: 5 },
-        ],
-        speed: 1.7,
-        visionRange: 152,
-        visionAngle: Math.PI / 2.8,
-      },
-    ],
-  };
-
-  // ── Level 2 (15×11) — 2 keys, 2 doors ────────────────────
-  // Player: (1,7)   Keys: (3,9),(10,9)   Doors: (7,6),(5,2)   Exit: (13,1)
-  const level2 = {
-    cols: 15,
+    cols: 17,
     rows: 11,
     map: [
-      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
-      W,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1 — exit at (13,1)
-      W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,   // row 2 — door at (5,2)
-      W,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
-      W,_,W,W,W,_,W,W,W,_,W,W,W,_,W,   // row 4
-      W,_,W,_,_,_,_,_,W,_,_,_,W,_,W,   // row 5
-      W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,   // row 6 — door at (7,6)
-      W,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7 — player at (1,7)
-      W,_,W,W,W,_,W,W,W,_,W,W,W,_,W,   // row 8
-      W,_,W,K,_,_,_,_,W,_,K,_,W,_,W,   // row 9 — keys at (3,9) and (10,9)
-      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 10
-    ],
-    playerStart: { col: 1, row: 7 },
-    enemies: [
-      // Top zone guard
-      {
-        patrol: [
-          { col: 1, row: 1 },
-          { col: 12, row: 1 },
-        ],
-        speed: 2.0,
-        visionRange: 180,
-        visionAngle: Math.PI / 3,
-      },
-      // Mid zone left guard
-      {
-        patrol: [
-          { col: 1, row: 3 },
-          { col: 6, row: 3 },
-          { col: 6, row: 5 },
-          { col: 1, row: 5 },
-        ],
-        speed: 1.8,
-        visionRange: 165,
-        visionAngle: Math.PI / 2.8,
-      },
-      // Mid zone right guard
-      {
-        patrol: [
-          { col: 9, row: 3 },
-          { col: 13, row: 3 },
-          { col: 13, row: 5 },
-          { col: 9, row: 5 },
-        ],
-        speed: 2.2,
-        visionRange: 158,
-        visionAngle: Math.PI / 2.5,
-      },
-      // Bottom zone patrol
-      {
-        patrol: [
-          { col: 1, row: 7 },
-          { col: 13, row: 7 },
-        ],
-        speed: 1.9,
-        visionRange: 162,
-        visionAngle: Math.PI / 3,
-      },
-      // Bottom maze rover
-      {
-        patrol: [
-          { col: 3, row: 9 },
-          { col: 3, row: 8 },
-          { col: 12, row: 8 },
-          { col: 12, row: 9 },
-        ],
-        speed: 2.1,
-        visionRange: 155,
-        visionAngle: Math.PI / 2.8,
-      },
-    ],
-  };
-
-  // ── Level 3 (17×13) — 3 keys, 3 doors ────────────────────
-  // Player: (1,11)   Keys: (4,11),(10,11),(14,11)
-  // Doors: (9,10),(5,6),(7,2)   Exit: (15,1)
-  const level3 = {
-    cols: 17,
-    rows: 13,
-    map: [
       W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
-      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1 — exit at (15,1)
-      W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,   // row 2 — door at (7,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (15,1)
+      W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,   // row 2  — door at (8,2)
       W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
-      W,_,W,W,W,_,W,W,W,_,W,W,W,_,W,_,W,   // row 4
-      W,_,W,_,_,_,_,_,W,_,_,_,W,_,W,_,W,   // row 5
-      W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,   // row 6 — door at (5,6)
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 4
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 6
       W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
-      W,_,W,W,W,_,W,W,W,_,W,W,W,_,W,_,W,   // row 8
-      W,_,W,_,_,_,W,_,W,_,_,_,W,_,W,_,W,   // row 9
-      W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,   // row 10 — door at (9,10)
-      W,_,_,_,K,_,_,_,_,_,K,_,_,_,K,_,W,   // row 11 — keys at (4,11),(10,11),(14,11)
-      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 12
+      W,_,W,W,_,_,W,W,_,_,_,_,W,W,_,_,W,   // row 8
+      W,_,_,K,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9  — key at (3,9); player at (1,9)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 10
     ],
-    playerStart: { col: 1, row: 11 },
+    playerStart: { col: 1, row: 9 },
     enemies: [
-      // Top zone sweeper (fast)
+      // Top zone guard — starts at left end of top corridor
       {
         patrol: [
           { col: 1, row: 1 },
           { col: 14, row: 1 },
         ],
-        speed: 2.4,
-        visionRange: 185,
+        speed: 1.6,
+        visionRange: 180,
         visionAngle: Math.PI / 3,
       },
-      // Upper zone left guard
+      // Middle corridor guard — starts at far right, away from player
       {
         patrol: [
-          { col: 1, row: 3 },
-          { col: 4, row: 3 },
-          { col: 4, row: 5 },
+          { col: 15, row: 5 },
           { col: 1, row: 5 },
         ],
-        speed: 2.0,
-        visionRange: 168,
-        visionAngle: Math.PI / 2.8,
+        speed: 1.5,
+        visionRange: 170,
+        visionAngle: Math.PI / 3,
       },
-      // Upper zone right guard
+      // Bottom zone guard — starts at right side, far from player spawn
       {
         patrol: [
-          { col: 9, row: 3 },
-          { col: 15, row: 3 },
-          { col: 15, row: 5 },
-          { col: 9, row: 5 },
+          { col: 15, row: 9 },
+          { col: 7, row: 9 },
         ],
-        speed: 2.3,
-        visionRange: 162,
-        visionAngle: Math.PI / 2.5,
+        speed: 1.7,
+        visionRange: 160,
+        visionAngle: Math.PI / 3,
+      },
+    ],
+  };
+
+  // ── Level 2 (19×13) — 2 keys, 2 doors ─────────────────────
+  // Player: (1,11)   Keys: (3,11),(12,11)
+  // Doors: (10,6),(5,2)   Exit: (17,1)
+  const level2 = {
+    cols: 19,
+    rows: 13,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (17,1)
+      W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 2  — door at (5,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 4
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,   // row 6  — door at (10,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 8
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 10
+      W,_,_,K,_,_,_,_,_,_,_,_,K,_,_,_,_,_,W,   // row 11 — keys at (3,11),(12,11); player at (1,11)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 12
+    ],
+    playerStart: { col: 1, row: 11 },
+    enemies: [
+      // Top zone guard
+      {
+        patrol: [
+          { col: 1, row: 1 },
+          { col: 16, row: 1 },
+        ],
+        speed: 2.0,
+        visionRange: 190,
+        visionAngle: Math.PI / 3,
       },
       // Mid zone left guard
       {
         patrol: [
-          { col: 1, row: 7 },
-          { col: 4, row: 7 },
-          { col: 4, row: 9 },
-          { col: 1, row: 9 },
+          { col: 1, row: 3 },
+          { col: 8, row: 3 },
+          { col: 8, row: 5 },
+          { col: 1, row: 5 },
         ],
-        speed: 1.9,
-        visionRange: 170,
-        visionAngle: Math.PI / 3,
+        speed: 1.8,
+        visionRange: 175,
+        visionAngle: Math.PI / 2.8,
       },
-      // Mid zone right guard (faster)
+      // Mid zone right guard
       {
         patrol: [
-          { col: 9, row: 7 },
-          { col: 15, row: 7 },
-          { col: 15, row: 9 },
-          { col: 9, row: 9 },
+          { col: 11, row: 3 },
+          { col: 17, row: 3 },
+          { col: 17, row: 5 },
+          { col: 11, row: 5 },
         ],
-        speed: 2.6,
-        visionRange: 155,
+        speed: 2.2,
+        visionRange: 168,
         visionAngle: Math.PI / 2.5,
       },
-      // Bottom zone key guardian
+      // Bottom corridor guard — starts at right side, away from player
       {
         patrol: [
-          { col: 4, row: 11 },
-          { col: 14, row: 11 },
+          { col: 17, row: 7 },
+          { col: 7, row: 7 },
+        ],
+        speed: 1.9,
+        visionRange: 172,
+        visionAngle: Math.PI / 3,
+      },
+      // Bottom maze rover — starts at far right corner
+      {
+        patrol: [
+          { col: 17, row: 11 },
+          { col: 5, row: 11 },
+        ],
+        speed: 2.1,
+        visionRange: 165,
+        visionAngle: Math.PI / 2.8,
+      },
+    ],
+  };
+
+  // ── Level 3 (21×15) — 3 keys, 3 doors ─────────────────────
+  // Player: (1,13)   Keys: (3,13),(10,13),(16,13)
+  // Doors: (13,10),(7,6),(11,2)   Exit: (19,1)
+  const level3 = {
+    cols: 21,
+    rows: 15,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (19,1)
+      W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,   // row 2  — door at (11,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 4
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 6  — door at (7,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 8
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,   // row 10 — door at (13,10)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 12
+      W,_,_,K,_,_,_,_,_,_,K,_,_,_,_,_,K,_,_,_,W,   // row 13 — keys at (3,13),(10,13),(16,13); player at (1,13)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 14
+    ],
+    playerStart: { col: 1, row: 13 },
+    enemies: [
+      // Top zone sweeper (fast)
+      {
+        patrol: [
+          { col: 1, row: 1 },
+          { col: 18, row: 1 },
+        ],
+        speed: 2.4,
+        visionRange: 195,
+        visionAngle: Math.PI / 3,
+      },
+      // Upper mid left guard
+      {
+        patrol: [
+          { col: 1, row: 3 },
+          { col: 5, row: 3 },
+          { col: 5, row: 5 },
+          { col: 1, row: 5 },
         ],
         speed: 2.0,
-        visionRange: 165,
+        visionRange: 178,
+        visionAngle: Math.PI / 2.8,
+      },
+      // Upper mid right guard
+      {
+        patrol: [
+          { col: 12, row: 3 },
+          { col: 19, row: 3 },
+          { col: 19, row: 5 },
+          { col: 12, row: 5 },
+        ],
+        speed: 2.3,
+        visionRange: 172,
+        visionAngle: Math.PI / 2.5,
+      },
+      // Lower mid horizontal patrol
+      {
+        patrol: [
+          { col: 1, row: 7 },
+          { col: 19, row: 7 },
+        ],
+        speed: 2.0,
+        visionRange: 185,
+        visionAngle: Math.PI / 3,
+      },
+      // Lower mid cross patrol — stays within rows 7-9
+      {
+        patrol: [
+          { col: 19, row: 9 },
+          { col: 1, row: 9 },
+        ],
+        speed: 2.1,
+        visionRange: 175,
+        visionAngle: Math.PI / 2.8,
+      },
+      // Bottom zone key guardian — starts at far right, away from player
+      {
+        patrol: [
+          { col: 19, row: 13 },
+          { col: 5, row: 13 },
+        ],
+        speed: 2.2,
+        visionRange: 180,
         visionAngle: Math.PI / 3,
       },
     ],

@@ -47,6 +47,10 @@ const Game = (() => {
   // ── Cached threat level (for rendering) ──────────────────
   let _threat = 0;
 
+  // ── Grace period after level start (prevents instant detection) ─
+  const GRACE_DURATION = 1.5; // seconds
+  let _graceTimer = 0;
+
   // ── Debug mode (# key) ───────────────────────────────────
   let _debugMode = false;
 
@@ -98,6 +102,7 @@ const Game = (() => {
     _shakeX = 0;
     _shakeY = 0;
     _threat = 0;
+    _graceTimer = GRACE_DURATION;
   }
 
   function _onKeyCollect() {
@@ -201,7 +206,10 @@ const Game = (() => {
     // Enemies
     EnemyManager.update(dt, Player.getPx(), Player.getPy());
 
-    if (EnemyManager.wasDetected() && !_debugMode) {
+    // Grace period: suppress detection for the first seconds of a level
+    if (_graceTimer > 0) _graceTimer -= rawDt;
+
+    if (EnemyManager.wasDetected() && !_debugMode && _graceTimer <= 0) {
       _onDetected();
       return;
     }
