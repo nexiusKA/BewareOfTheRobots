@@ -357,7 +357,7 @@ body {
     ". up . ."
     "left . right bomb"
     ". down . .";
-  grid-template-columns: repeat(3, 64px) 74px;
+  grid-template-columns: repeat(4, 64px);
   grid-template-rows: repeat(3, 64px);
   gap: 5px;
   user-select: none;
