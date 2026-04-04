@@ -16,6 +16,13 @@ const EnemyManager = (() => {
   let _alertFlash = 0;    // seconds remaining for global alert flash
   let _detected  = false; // has detection occurred this frame?
 
+  // Last known player position (updated each frame) used for proximity-based
+  // fog visibility so enemies near the player are revealed slightly early.
+  let _playerPx = -1;
+  let _playerPy = -1;
+  // Tiles of extra look-ahead beyond the fog reveal radius
+  const FOG_PEEK_RADIUS = 2;
+
   // ── Detection config (tunable via debug mode) ────────────
   let _detectTime = 0.2;   // seconds of continuous visibility needed to trigger detection
   let _coneScale  = 0.70;  // scale factor applied to both visionRange and visionAngle
@@ -81,6 +88,8 @@ const EnemyManager = (() => {
 
   function update(dt, playerPx, playerPy) {
     _detected = false;
+    _playerPx = playerPx;
+    _playerPy = playerPy;
     if (_alertFlash > 0) _alertFlash -= dt;
 
     for (const e of _enemies) {
@@ -183,7 +192,16 @@ const EnemyManager = (() => {
   }
 
   function _isEnemyVisible(e) {
-    return FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS));
+    if (FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS))) return true;
+    // Also reveal enemies that are close to the player even if their tile hasn't
+    // been explored yet — gives the player slightly more reaction time in fog mode.
+    if (FogManager.isEnabled() && _playerPx >= 0) {
+      const peekPx = FOG_PEEK_RADIUS * TS;
+      const dx = e.px - _playerPx;
+      const dy = e.py - _playerPy;
+      if (dx * dx + dy * dy <= peekPx * peekPx) return true;
+    }
+    return false;
   }
 
   function draw(ctx) {
