@@ -36,9 +36,13 @@ const EnemyManager = (() => {
 
   // ── Type constants ───────────────────────────────────────────────────────
   const TYPE = {
+    // Legacy types — kept for backward compatibility; BaseEnemy still handles them.
     PATROL:  'patrol',
     SCANNER: 'scanner',
     HUNTER:  'hunter',
+    // Named enemy types (preferred for new code)
+    GUARD_BOT:   'guard_bot',    // balanced speed, medium cone (red)
+    SCANNER_BOT: 'scanner_bot',  // slower, wide long-range cone (blue)
   };
 
   // ── FSM state constants ──────────────────────────────────────────────────
@@ -106,12 +110,18 @@ const EnemyManager = (() => {
     // ── Constructor ──────────────────────────────────────────────────────────
     constructor(def) {
       // Config -- set once, not mutated during gameplay
-      this.type         = def.type || TYPE.PATROL;
+      this.type         = def.type || TYPE.GUARD_BOT;
       this.patrolPoints = def.patrol;           // [{col,row}, ...]
       this.speed        = def.speed * TS;       // px/s
       this.visionRange  = def.visionRange;      // px
       this.visionAngle  = def.visionAngle;      // half-angle, radians
       this.waitDuration = def.waitDuration != null ? def.waitDuration : 0.4;
+
+      // Per-instance tuning.
+      // detectTimeMultiplier < 1 → faster detection buildup (e.g. ScannerBot).
+      // searchDuration overrides the module-level SEARCH_DURATION constant.
+      this.detectTimeMultiplier = def.detectTimeMultiplier != null ? def.detectTimeMultiplier : 1.0;
+      this.searchDuration       = def.searchDuration       != null ? def.searchDuration       : SEARCH_DURATION;
 
       // Position / orientation
       const start = this.patrolPoints[0];
@@ -136,7 +146,7 @@ const EnemyManager = (() => {
       this.alertTimer = 0;         // drives "!" flash above the body
       this.bobTimer   = Math.random() * Math.PI * 2;
 
-      // Scanner sweep (only used for SCANNER type)
+      // Scanner sweep (used by SCANNER and SCANNER_BOT types via effectiveFacing)
       this._sweepTimer  = Math.random() * Math.PI * 2;
       this._sweepOffset = 0;
     }
@@ -149,7 +159,7 @@ const EnemyManager = (() => {
       if (this.alertTimer > 0) this.alertTimer -= dt;
 
       // Scanner cone oscillates independently of movement direction.
-      if (this.type === TYPE.SCANNER) {
+      if (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) {
         this._sweepTimer  += dt;
         this._sweepOffset  = Math.sin(this._sweepTimer * 1.4) * (Math.PI / 3);
       }
@@ -188,10 +198,10 @@ const EnemyManager = (() => {
 
       // Advance or decay the detection meter.
       if (inView) {
-        this.detectionMeter = Math.min(1, this.detectionMeter + dt / _detectTime);
+        this.detectionMeter = Math.min(1, this.detectionMeter + dt / (_detectTime * this.detectTimeMultiplier));
       } else {
         this.detectionMeter = Math.max(
-          0, this.detectionMeter - dt / (_detectTime * METER_DRAIN_RATIO)
+          0, this.detectionMeter - dt / (_detectTime * this.detectTimeMultiplier * METER_DRAIN_RATIO)
         );
       }
 
@@ -301,14 +311,14 @@ const EnemyManager = (() => {
 
     // Effective facing accounts for the scanner's oscillating sweep angle.
     effectiveFacing() {
-      return this.type === TYPE.SCANNER
+      return (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT)
         ? this.facing + this._sweepOffset
         : this.facing;
     }
 
     _enterSearch() {
       this.state        = STATE.SEARCH;
-      this._searchTimer = SEARCH_DURATION;
+      this._searchTimer = this.searchDuration;
     }
 
     // Ping-pong between waypoints with a brief wait at each point.
@@ -422,9 +432,9 @@ const EnemyManager = (() => {
       ctx.save();
       ctx.translate(x, y + bob);
       ctx.rotate(this.facing);
-      if      (this.type === TYPE.SCANNER) _drawScannerBody(ctx, r, isAlert);
-      else if (this.type === TYPE.HUNTER)  _drawHunterBody(ctx, r, isAlert);
-      else                                 _drawPatrolBody(ctx, r, isAlert);
+      if      (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) _drawScannerBody(ctx, r, isAlert);
+      else if (this.type === TYPE.HUNTER)                                     _drawHunterBody(ctx, r, isAlert);
+      else                                                                     _drawPatrolBody(ctx, r, isAlert);
       ctx.shadowBlur = 0;
       ctx.restore();
 
@@ -479,7 +489,7 @@ const EnemyManager = (() => {
           grad.addColorStop(1,   'rgba(255,120,0,0.0)');
           break;
         default:
-          if (this.type === TYPE.SCANNER) {
+          if (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) {
             grad.addColorStop(0,    'rgba(80,120,255,0.50)');
             grad.addColorStop(0.45, 'rgba(60,90,220,0.22)');
             grad.addColorStop(1,    'rgba(40,60,180,0.0)');
@@ -501,13 +511,56 @@ const EnemyManager = (() => {
         case STATE.SEARCH:     return 'rgba(255,140,0,0.40)';
         case STATE.SUSPICIOUS: return 'rgba(255,190,0,0.45)';
         default:
-          if (this.type === TYPE.SCANNER) return 'rgba(100,140,255,0.38)';
-          if (this.type === TYPE.HUNTER)  return 'rgba(220,30,70,0.50)';
+          if (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) return 'rgba(100,140,255,0.38)';
+          if (this.type === TYPE.HUNTER)                                     return 'rgba(220,30,70,0.50)';
           return 'rgba(255,220,0,0.25)';
       }
     }
   }
   // ── end class BaseEnemy ───────────────────────────────────────────────────
+
+
+  // =========================================================================
+  //  GuardBot — balanced, default enemy (red)
+  // =========================================================================
+  // Balanced speed, medium vision range, medium cone angle, standard detection.
+  // All FSM logic is inherited unchanged from BaseEnemy.
+  class GuardBot extends BaseEnemy {
+    constructor(def) {
+      super({
+        type:        TYPE.GUARD_BOT,
+        patrol:      def.patrol,
+        speed:       def.speed       != null ? def.speed       : 1.60,
+        visionRange: def.visionRange != null ? def.visionRange : 185,
+        visionAngle: def.visionAngle != null ? def.visionAngle : Math.PI / 3,
+        waitDuration: def.waitDuration != null ? def.waitDuration : 0.4,
+        // detectTimeMultiplier defaults to 1.0 (standard)
+        // searchDuration defaults to SEARCH_DURATION
+      });
+    }
+  }
+
+  // =========================================================================
+  //  ScannerBot — long-range threat (blue)
+  // =========================================================================
+  // Slower movement, large vision range, wide cone, faster detection buildup,
+  // and a longer search phase — dangerous at distance.
+  // The cone also oscillates (inherited SCANNER-sweep behaviour via effectiveFacing).
+  class ScannerBot extends BaseEnemy {
+    constructor(def) {
+      super({
+        type:                 TYPE.SCANNER_BOT,
+        patrol:               def.patrol,
+        speed:                def.speed        != null ? def.speed        : 1.25,
+        visionRange:          def.visionRange  != null ? def.visionRange  : 260,
+        visionAngle:          def.visionAngle  != null ? def.visionAngle  : Math.PI / 2,
+        waitDuration:         def.waitDuration != null ? def.waitDuration : 0.5,
+        detectTimeMultiplier: 0.6,   // fills 1.67× faster than GuardBot
+        searchDuration:       5.5,   // scans for longer after losing the player
+      });
+    }
+  }
+  // ── end GuardBot / ScannerBot ─────────────────────────────────────────────
 
 
   // =========================================================================
@@ -643,7 +696,11 @@ const EnemyManager = (() => {
   let _enemies = [];
 
   function init(defs) {
-    _enemies = defs.map(def => new BaseEnemy(def));
+    _enemies = defs.map(def => {
+      if (def.type === TYPE.GUARD_BOT)   return new GuardBot(def);
+      if (def.type === TYPE.SCANNER_BOT) return new ScannerBot(def);
+      return new BaseEnemy(def);
+    });
     _caught  = false;
   }
 
