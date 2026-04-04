@@ -72,21 +72,18 @@ const Tilemap = (() => {
     if (get(col, row) === TILE.DEMOLITION) set(col, row, TILE.FLOOR);
   }
 
-  // Destroy all non-border WALL tiles whose centre falls within radius pixels
-  // of (px, py). Called when a bomb explodes with the demolition perk active.
-  function destroyWallsInRadius(px, py, radius) {
-    const minC = Math.max(1, Math.floor((px - radius) / TILE_SIZE));
-    const maxC = Math.min(_cols - 2, Math.ceil((px + radius) / TILE_SIZE));
-    const minR = Math.max(1, Math.floor((py - radius) / TILE_SIZE));
-    const maxR = Math.min(_rows - 2, Math.ceil((py + radius) / TILE_SIZE));
-    const r2   = radius * radius;
-    for (let r = minR; r <= maxR; r++) {
-      for (let c = minC; c <= maxC; c++) {
-        if (get(c, r) !== TILE.WALL) continue;
-        const cx = c * TILE_SIZE + TILE_SIZE / 2;
-        const cy = r * TILE_SIZE + TILE_SIZE / 2;
-        const dx = cx - px, dy = cy - py;
-        if (dx * dx + dy * dy <= r2) set(c, r, TILE.FLOOR);
+  // Destroy non-border WALL tiles directly adjacent (8 neighbours) to the
+  // bomb's tile. Called when a bomb explodes with the demolition perk active.
+  function destroyAdjacentWalls(px, py) {
+    const bc = Math.floor(px / TILE_SIZE);
+    const br = Math.floor(py / TILE_SIZE);
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const c = bc + dc;
+        const r = br + dr;
+        if (c < 1 || c > _cols - 2 || r < 1 || r > _rows - 2) continue;
+        if (get(c, r) === TILE.WALL) set(c, r, TILE.FLOOR);
       }
     }
   }
@@ -582,7 +579,7 @@ const Tilemap = (() => {
     setTheme, getTheme,
     isPassable, isDoor, isKey, isExit, isAmmo, isDemolitionPerk,
     openDoor, removeKey, removeAmmo, removeDemolitionPerk,
-    destroyWallsInRadius,
+    destroyAdjacentWalls,
     startDoorOpenEffect,
     pixelWidth, pixelHeight, cols, rows,
     hasLineOfSight,

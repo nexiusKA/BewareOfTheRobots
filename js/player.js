@@ -79,6 +79,7 @@ const Player = (() => {
   function getBombAmmo() { return _bombAmmo; }
   function setGhostMode(enabled) { _ghostMode = enabled; }
   function isGhostMode()         { return _ghostMode; }
+  function consumeDemolition()   { _hasDemolition = false; }
   function hasDemolition()       { return _hasDemolition; }
 
   function addBombAmmo(n) {
@@ -418,6 +419,6 @@ const Player = (() => {
     getKeys, getCol, getRow, getPx, getPy,
     getBombAmmo, addBombAmmo, useBomb,
     setGhostMode, isGhostMode,
-    hasDemolition
+    hasDemolition, consumeDemolition
   };
 })();

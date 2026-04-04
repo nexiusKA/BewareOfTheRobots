@@ -45,7 +45,8 @@ const BombManager = (() => {
           b.explodeTimer = EXPLODE_DURATION;
           EnemyManager.killEnemiesInRadius(b.px, b.py, b.radius);
           if (Player.hasDemolition()) {
-            Tilemap.destroyWallsInRadius(b.px, b.py, b.radius);
+            Tilemap.destroyAdjacentWalls(b.px, b.py);
+            Player.consumeDemolition();
           }
           _spawnExplosionParticles(b.px, b.py);
           Sound.bombDetonate();
