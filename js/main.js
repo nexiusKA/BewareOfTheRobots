@@ -96,10 +96,12 @@
       btn.textContent = label;
       btn.classList.toggle('mobile-toggle-active', enabled);
     });
-    if (enabled) {
-      _dpad.classList.add('dpad-active');
-    } else {
-      _dpad.classList.remove('dpad-active');
+    if (_dpad) {
+      if (enabled) {
+        _dpad.classList.add('dpad-active');
+      } else {
+        _dpad.classList.remove('dpad-active');
+      }
     }
   }
 
@@ -112,8 +114,10 @@
   // Apply saved preference on load
   _syncMobileToggleBtns(_isMobileEnabled());
 
-  // Wire up all toggle buttons (overlay + info overlay)
-  document.querySelectorAll('.mobile-toggle-btn').forEach(function (btn) {
-    btn.addEventListener('click', _toggleMobile);
+  // Use event delegation so any current or future .mobile-toggle-btn is handled
+  document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('mobile-toggle-btn')) {
+      _toggleMobile();
+    }
   });
 })();
