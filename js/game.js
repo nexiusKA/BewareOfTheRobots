@@ -34,6 +34,7 @@ const Game = (() => {
   const VIEWPORT_ROWS = 20;
   const VIEWPORT_W    = VIEWPORT_COLS * Tilemap.TILE_SIZE; // 960 px
   const VIEWPORT_H    = VIEWPORT_ROWS * Tilemap.TILE_SIZE; // 960 px
+  const _HUD_HEIGHT   = 38; // pixels reserved at top for HUD bar
   let _camX = 0;  // world-space left edge of viewport
   let _camY = 0;  // world-space top edge of viewport
 
@@ -302,7 +303,9 @@ const Game = (() => {
       _shakeY = 0;
     }
 
-    // Camera — centre on player, clamped to map bounds
+    // Camera — centre on player, clamped to map bounds.
+    // If the map is smaller than the viewport, the max clamp collapses to 0
+    // so the camera stays at the top-left corner (map shown from origin).
     const mapW = Tilemap.pixelWidth();
     const mapH = Tilemap.pixelHeight();
     _camX = Utils.clamp(Player.getPx() - VIEWPORT_W / 2, 0, Math.max(0, mapW - VIEWPORT_W));
