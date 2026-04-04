@@ -46,7 +46,10 @@ const UI = (() => {
       'Avoid the patrol robots at all costs.<br>' +
       'Place bombs with <b>[SPACE]</b> to destroy enemies.<br><br>' +
       '<small>WASD / Arrow keys to move &nbsp;|&nbsp; Space to place bomb &nbsp;|&nbsp; R to restart</small><br>' +
-      '<small>Press <b>[I]</b> in-game for full controls &amp; enemy info</small>';
+      '<small>Press <b>[I]</b> in-game for full controls &amp; enemy info</small><br>' +
+      '<small style="opacity:0.45">build #' + BUILD_INFO.run +
+        ' &nbsp;·&nbsp; ' + BUILD_INFO.sha.slice(0, 7) +
+        ' &nbsp;·&nbsp; ' + BUILD_INFO.branch + '</small>';
     overlayBtn.textContent = 'START GAME';
     overlayBtn.onclick = onStart;
     overlay.classList.remove('hidden');

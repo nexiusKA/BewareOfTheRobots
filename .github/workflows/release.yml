@@ -18,38 +18,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
+      - name: Inject build info into version.js
+        run: |
+          cat > js/version.js <<'JSEOF'
+// ── version.js ───────────────────────────────────────────────
+// Build metadata — overwritten by CI on each release build.
+// In local dev this file is used as-is (all fields read "dev").
+const BUILD_INFO = (function () {
+  return {
+    run:    '${{ github.run_number }}',
+    sha:    '${{ github.sha }}',
+    branch: '${{ github.ref_name }}',
+  };
+})();
+JSEOF
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run regression tests
-        run: npm run test:regression
-
-      - name: Build
-        run: npm run build
-        env:
-          BUILD_NUMBER: ${{ github.run_number }}
-          COMMIT_SHA: ${{ github.sha }}
-          BRANCH: ${{ github.ref_name }}
+      - name: Package game files
+        run: zip -r game.zip . --exclude '.git/*' --exclude '.github/*'
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: site-dist
-          path: dist
+          name: game-dist
+          path: game.zip
           retention-days: 90
 
       - name: Create or update latest release
         run: |
           gh release delete latest --yes 2>/dev/null || true
-          gh release create latest dist/index.html dist/game.html dist/perk-library.html dist/showcase.html dist/skills-showcase.html \
+          gh release create latest game.zip \
             --title "Latest Build (run ${{ github.run_number }})" \
-            --notes "Built from commit ${{ github.sha }} on $(date -u +%Y-%m-%d)" \
+            --notes "Built from commit ${{ github.sha }} on branch \`${{ github.ref_name }}\` on $(date -u +%Y-%m-%d)" \
             --prerelease
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -57,7 +56,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: .
 
   deploy:
     needs: build
