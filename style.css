@@ -356,7 +356,7 @@ body {
   grid-template-areas:
     "ghost up . info"
     "left . right bomb"
-    "debug down . restart";
+    "debug down fog restart";
   grid-template-columns: repeat(4, 64px);
   grid-template-rows: repeat(3, 64px);
   gap: 5px;
@@ -379,6 +379,7 @@ body {
 #dpad-info    { grid-area: info; }
 #dpad-restart { grid-area: restart; }
 #dpad-ghost   { grid-area: ghost; }
+#dpad-fog     { grid-area: fog; }
 #dpad-debug   { grid-area: debug; }
 
 .dpad-btn {
@@ -443,6 +444,20 @@ body {
 .dpad-ghost-btn.dpad-pressed {
   background: rgba(204, 136, 255, 0.28);
   box-shadow: 0 0 12px rgba(204, 136, 255, 0.55);
+}
+
+/* Fog mode button — grey/white accent */
+.dpad-fog-btn {
+  color: #aaddff;
+  border-color: rgba(170, 221, 255, 0.45);
+  background: rgba(170, 221, 255, 0.10);
+  font-size: 1.3rem;
+}
+
+.dpad-fog-btn:active,
+.dpad-fog-btn.dpad-pressed {
+  background: rgba(170, 221, 255, 0.28);
+  box-shadow: 0 0 12px rgba(170, 221, 255, 0.55);
 }
 
 /* Debug button — red/magenta accent */

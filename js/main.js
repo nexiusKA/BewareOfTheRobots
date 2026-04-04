@@ -87,6 +87,7 @@
   _setupActionButton('dpad-info',    'KeyI');
   _setupActionButton('dpad-restart', 'KeyR');
   _setupActionButton('dpad-ghost',   'KeyG');
+  _setupActionButton('dpad-fog',     'KeyF');
   _setupActionButton('dpad-debug',   null, '#');
 
   // ── Mobile D-pad menu toggle ───────────────────────────────
