@@ -69,5 +69,12 @@ const Input = (() => {
     return { dx, dy };
   }
 
-  return { init, flush, isDown, isPressed, isReleased, isPressedKey, getMoveDelta };
+  // Simulate a single-frame key press from virtual (on-screen) controls.
+  // flush() clears _justPressed every frame, so the press is automatically
+  // consumed after one update cycle — no extra cleanup needed here.
+  function pressVirtual(code) {
+    _justPressed[code] = true;
+  }
+
+  return { init, flush, isDown, isPressed, isReleased, isPressedKey, getMoveDelta, pressVirtual };
 })();

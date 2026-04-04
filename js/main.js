@@ -20,4 +20,46 @@
 
   Game.init(canvas);
   Game.start();
+
+  // ── Mobile D-pad wiring ────────────────────────────────────
+  const DPAD_INITIAL_DELAY = 280; // ms before repeat starts on hold
+  const DPAD_REPEAT_DELAY  = 160; // ms between repeated moves while held
+
+  function _setupDpadButton(id, code) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    let initialTimer = null;
+    let repeatTimer  = null;
+
+    function startRepeat() {
+      repeatTimer = setInterval(function () {
+        Input.pressVirtual(code);
+      }, DPAD_REPEAT_DELAY);
+    }
+
+    function onPress(e) {
+      e.preventDefault();
+      Input.pressVirtual(code);
+      btn.classList.add('dpad-pressed');
+      initialTimer = setTimeout(startRepeat, DPAD_INITIAL_DELAY);
+    }
+
+    function onRelease() {
+      btn.classList.remove('dpad-pressed');
+      clearTimeout(initialTimer);
+      clearInterval(repeatTimer);
+      initialTimer = null;
+      repeatTimer  = null;
+    }
+
+    btn.addEventListener('pointerdown',   onPress);
+    btn.addEventListener('pointerup',     onRelease);
+    btn.addEventListener('pointercancel', onRelease);
+    btn.addEventListener('pointerleave',  onRelease);
+  }
+
+  _setupDpadButton('dpad-up',    'ArrowUp');
+  _setupDpadButton('dpad-left',  'ArrowLeft');
+  _setupDpadButton('dpad-right', 'ArrowRight');
+  _setupDpadButton('dpad-down',  'ArrowDown');
 })();
