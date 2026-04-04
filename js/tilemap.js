@@ -11,6 +11,7 @@ const Tilemap = (() => {
     DOOR_OPEN:3,   // open door (passable)
     KEY:      4,   // collectible key
     EXIT:     5,   // level exit
+    AMMO:     6,   // bomb ammo pickup
   };
 
   // Tile colours
@@ -21,6 +22,7 @@ const Tilemap = (() => {
     [TILE.DOOR_OPEN]: '#141428',
     [TILE.KEY]:       '#ffee00',
     [TILE.EXIT]:      '#00ffcc',
+    [TILE.AMMO]:      '#00ff88',
   };
 
   const TILE_SIZE = 48; // px
@@ -48,7 +50,7 @@ const Tilemap = (() => {
 
   function isPassable(col, row) {
     const t = get(col, row);
-    return t === TILE.FLOOR || t === TILE.DOOR_OPEN || t === TILE.KEY || t === TILE.EXIT;
+    return t === TILE.FLOOR || t === TILE.DOOR_OPEN || t === TILE.KEY || t === TILE.EXIT || t === TILE.AMMO;
   }
 
   function isDoor(col, row) {
@@ -63,6 +65,10 @@ const Tilemap = (() => {
     return get(col, row) === TILE.EXIT;
   }
 
+  function isAmmo(col, row) {
+    return get(col, row) === TILE.AMMO;
+  }
+
   function openDoor(col, row) {
     if (get(col, row) === TILE.DOOR) {
       set(col, row, TILE.DOOR_OPEN);
@@ -71,6 +77,12 @@ const Tilemap = (() => {
 
   function removeKey(col, row) {
     if (get(col, row) === TILE.KEY) {
+      set(col, row, TILE.FLOOR);
+    }
+  }
+
+  function removeAmmo(col, row) {
+    if (get(col, row) === TILE.AMMO) {
       set(col, row, TILE.FLOOR);
     }
   }
@@ -126,10 +138,12 @@ const Tilemap = (() => {
           _drawKey(ctx, x, y);
         } else if (tile === TILE.EXIT) {
           _drawExit(ctx, x, y);
+        } else if (tile === TILE.AMMO) {
+          _drawAmmo(ctx, x, y);
         }
 
         // Subtle grid lines on floor
-        if (tile === TILE.FLOOR || tile === TILE.DOOR_OPEN || tile === TILE.KEY || tile === TILE.EXIT) {
+        if (tile === TILE.FLOOR || tile === TILE.DOOR_OPEN || tile === TILE.KEY || tile === TILE.EXIT || tile === TILE.AMMO) {
           ctx.strokeStyle = 'rgba(255,255,255,0.03)';
           ctx.lineWidth = 0.5;
           ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
@@ -236,11 +250,54 @@ const Tilemap = (() => {
     ctx.restore();
   }
 
+  function _drawAmmo(ctx, x, y) {
+    const cx = x + TILE_SIZE / 2;
+    const cy = y + TILE_SIZE / 2;
+    const blink = _blinkPhase;
+    const glow = 6 + blink * 8;
+
+    ctx.save();
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = '#00ff88';
+
+    // Bomb icon: outer circle
+    ctx.strokeStyle = `rgba(0,255,136,${0.8 + blink * 0.2})`;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy + 2, 9, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Fill
+    ctx.fillStyle = `rgba(0,200,100,${0.25 + blink * 0.15})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy + 2, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fuse / stem
+    ctx.strokeStyle = `rgba(0,255,136,${0.7 + blink * 0.3})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 7);
+    ctx.lineTo(cx, cy - 12);
+    ctx.lineTo(cx + 5, cy - 16);
+    ctx.stroke();
+
+    // Spark dot at fuse tip
+    ctx.fillStyle = `rgba(255,255,100,${0.6 + blink * 0.4})`;
+    ctx.shadowColor = '#ffff44';
+    ctx.shadowBlur = 5 + blink * 5;
+    ctx.beginPath();
+    ctx.arc(cx + 5, cy - 16, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
   return {
     TILE, TILE_SIZE,
     init, get, set,
-    isPassable, isDoor, isKey, isExit,
-    openDoor, removeKey,
+    isPassable, isDoor, isKey, isExit, isAmmo,
+    openDoor, removeKey, removeAmmo,
     pixelWidth, pixelHeight, cols, rows,
     hasLineOfSight,
     update, draw

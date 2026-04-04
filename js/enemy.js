@@ -233,5 +233,16 @@ const EnemyManager = (() => {
 
   function getEnemies() { return _enemies; }
 
-  return { init, update, draw, wasDetected, getNearAlert, getEnemies };
+  // Remove all enemies within radius of (px, py) — used by bomb explosions
+  function killEnemiesInRadius(px, py, radius) {
+    const r2 = radius * radius;
+    for (let i = _enemies.length - 1; i >= 0; i--) {
+      const e = _enemies[i];
+      if (Utils.dist2(e.px, e.py, px, py) <= r2) {
+        _enemies.splice(i, 1);
+      }
+    }
+  }
+
+  return { init, update, draw, wasDetected, getNearAlert, getEnemies, killEnemiesInRadius };
 })();

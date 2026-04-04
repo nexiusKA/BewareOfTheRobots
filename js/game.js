@@ -83,10 +83,11 @@ const Game = (() => {
 
     // Init subsystems
     Tilemap.init(def.cols, def.rows, def.map);
-    Player.init(def.playerStart.col, def.playerStart.row);
+    Player.init(def.playerStart.col, def.playerStart.row, def.startBombs || 0);
     EnemyManager.init(def.enemies);
+    BombManager.init();
 
-    UI.setHUD(index + 1, Levels.count(), Player.getKeys());
+    UI.setHUD(index + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
 
     return true;
   }
@@ -106,8 +107,16 @@ const Game = (() => {
   }
 
   function _onKeyCollect() {
-    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys());
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
     UI.flashKeyCollect();
+  }
+
+  // ── Bomb placement flash (brief screen flash on placement) ─
+  let _bombPlaceFlash = 0;
+
+  function _onAmmoCollect() {
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
+    UI.flashAmmoCollect();
   }
 
   function _onDoorOpen() {
@@ -201,7 +210,18 @@ const Game = (() => {
       Player.tryMove(dx, dy, _onKeyCollect, _onDoorOpen, null);
     }
 
-    Player.update(dt, _onKeyCollect, _onExit);
+    // Bomb placement — Space key
+    if (Input.isPressed('Space') && Player.getBombAmmo() > 0) {
+      Player.useBomb();
+      BombManager.placeBomb(Player.getPx(), Player.getPy());
+      _bombPlaceFlash = 0.12;
+      UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
+    }
+
+    Player.update(dt, _onKeyCollect, _onExit, _onAmmoCollect);
+
+    // Bombs
+    BombManager.update(dt);
 
     // Enemies
     EnemyManager.update(dt, Player.getPx(), Player.getPy());
@@ -242,10 +262,11 @@ const Game = (() => {
 
     // Fail flash decay
     if (_failFlash > 0) _failFlash -= rawDt;
+    if (_bombPlaceFlash > 0) _bombPlaceFlash -= rawDt;
 
     // HUD
     UI.update(rawDt);
-    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys());
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
   }
 
   function _render() {
@@ -260,6 +281,7 @@ const Game = (() => {
     ctx.save();
     ctx.translate(_camX + _shakeX, _camY + _shakeY);
     Tilemap.draw(ctx);
+    BombManager.draw(ctx);
     EnemyManager.draw(ctx);
     Player.draw(ctx);
     ctx.restore();
@@ -267,6 +289,12 @@ const Game = (() => {
     // Fail flash overlay
     if (_failFlash > 0) {
       ctx.fillStyle = `rgba(255,30,30,${Utils.clamp(_failFlash * 0.8, 0, 0.55)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // Bomb placement flash (brief white-green flash)
+    if (_bombPlaceFlash > 0) {
+      ctx.fillStyle = `rgba(0,255,136,${Utils.clamp(_bombPlaceFlash * 3.5, 0, 0.18)})`;
       ctx.fillRect(0, 0, W, H);
     }
 
