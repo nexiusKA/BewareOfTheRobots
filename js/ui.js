@@ -39,16 +39,36 @@ const UI = (() => {
   function showStart(levelCount, onStart) {
     _clearTheme();
     _applyClass('overlay-start');
-    overlayTitle.textContent = 'BEWARE OF THE ROBOTS';
+    overlayTitle.innerHTML = '🤖 BEWARE OF THE ROBOTS';
     overlayMsg.innerHTML =
-      'A stealth puzzle game.<br>' +
-      'Collect keys, open doors, reach the exit.<br>' +
-      'Avoid the patrol robots at all costs.<br>' +
-      'Place bombs with <b>[SPACE]</b> to destroy enemies.<br><br>' +
-      '<small>WASD / Arrow keys to move &nbsp;|&nbsp; Space to place bomb &nbsp;|&nbsp; R to restart</small><br>' +
-      '<small>Press <b>[I]</b> in-game for full controls &amp; enemy info</small><br>' +
-      '<details class="git-info" open>' +
-        '<summary>Git Info</summary>' +
+      '<div class="start-tagline">A tactical stealth game — evade, think, survive.</div>' +
+
+      '<div class="start-section">' +
+        '<div class="start-section-header">🎯 OBJECTIVE</div>' +
+        '<div class="start-feat-row">🔑 Collect <b>KEYS</b> to unlock 🚪 <b>DOORS</b> and reach the <b>EXIT ▶</b></div>' +
+        '<div class="start-feat-row">💣 Place <b>BOMBS</b> <small>[Space]</small> — 1.2s fuse, blast clears enemies permanently</div>' +
+        '<div class="start-feat-row">◆ Grab <b>AMMO</b> crates scattered across each sector for extra charges</div>' +
+      '</div>' +
+
+      '<div class="start-section">' +
+        '<div class="start-section-header">⚡ KEY MECHANICS</div>' +
+        '<div class="start-feat-row">⏱️ Time <b>slows</b> when you near an enemy's vision cone — use it to plan</div>' +
+        '<div class="start-feat-row">⚠️ A detection meter fills above enemies — escape the cone before it maxes out</div>' +
+        '<div class="start-feat-row">🛡️ A <b>1.5s grace period</b> protects you at the start of every sector</div>' +
+        '<div class="start-feat-row">🌫️ <b>Fog of War</b> <small>[F]</small> &nbsp;•&nbsp; 👻 <b>Ghost Mode</b> <small>[G]</small> &nbsp;•&nbsp; 📋 <b>Full info</b> <small>[I]</small></div>' +
+      '</div>' +
+
+      '<div class="start-section">' +
+        '<div class="start-section-header">🤖 ENEMY TYPES</div>' +
+        '<div class="start-enemy start-patrol">🟠 <b>PATROL</b> — Standard guard, fixed route, amber forward cone</div>' +
+        '<div class="start-enemy start-scanner">🔵 <b>SCANNER</b> — Slow but sweeps a wide ±60° cone unpredictably</div>' +
+        '<div class="start-enemy start-hunter">🔴 <b>HUNTER</b> — Fast pursuit, razor-thin laser beam, long range</div>' +
+      '</div>' +
+
+      '<div class="start-controls-hint">🕹️ WASD / ↑↓←→ Move &nbsp;•&nbsp; Space Bomb &nbsp;•&nbsp; R Restart &nbsp;•&nbsp; I Info</div>' +
+
+      '<details class="git-info">' +
+        '<summary>Build Info</summary>' +
         '<dl class="git-info-grid">' +
           '<dt>Version</dt><dd>0.' + BUILD_INFO.run + '</dd>' +
           '<dt>Commit</dt><dd>' + BUILD_INFO.sha.slice(0, 7) + '</dd>' +
@@ -56,7 +76,7 @@ const UI = (() => {
           '<dt>Build Date</dt><dd>' + BUILD_INFO.date + '</dd>' +
         '</dl>' +
       '</details>';
-    overlayBtn.textContent = 'START GAME';
+    overlayBtn.textContent = '▶  START GAME';
     overlayBtn.onclick = onStart;
     overlay.classList.remove('hidden');
   }

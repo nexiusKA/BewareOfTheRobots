@@ -72,6 +72,87 @@ body {
   text-align: left;
 }
 
+/* ── Start-page overlay — wider + richer layout ────────────── */
+#overlay-content.overlay-start {
+  max-width: 560px;
+  padding: 2rem 2.5rem 1.8rem;
+  text-align: left;
+}
+
+#overlay-content.overlay-start #overlay-title {
+  font-size: 1.55rem;
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.start-tagline {
+  text-align: center;
+  font-size: 0.82rem;
+  letter-spacing: 1.5px;
+  opacity: 0.6;
+  margin-bottom: 1.1rem;
+}
+
+.start-section {
+  margin-bottom: 1rem;
+}
+
+.start-section-header {
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  opacity: 0.55;
+  border-bottom: 1px solid rgba(0, 255, 204, 0.15);
+  padding-bottom: 3px;
+  margin-bottom: 6px;
+}
+
+.start-feat-row {
+  font-size: 0.81rem;
+  line-height: 1.75;
+  opacity: 0.88;
+  padding-left: 4px;
+}
+
+.start-feat-row small {
+  opacity: 0.6;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+}
+
+.start-enemy {
+  font-size: 0.8rem;
+  line-height: 1.65;
+  padding: 3px 8px;
+  margin-bottom: 3px;
+  border-left: 3px solid;
+  border-radius: 0 3px 3px 0;
+}
+
+.start-patrol  { border-color: #ff6600; color: #ff9944; }
+.start-scanner { border-color: #4466ff; color: #88aaff; }
+.start-hunter  { border-color: #cc0022; color: #ff5566; }
+
+.start-controls-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  opacity: 0.5;
+  margin: 0.85rem 0 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(0, 255, 204, 0.12);
+}
+
+#overlay-content.overlay-start #overlay-btn {
+  display: block;
+  width: 100%;
+  font-size: 1rem;
+  letter-spacing: 5px;
+  padding: 0.7rem 1rem;
+  margin-top: 0.6rem;
+}
+
 /* ── Git Info collapsible ─────────────────────────────────── */
 .git-info {
   margin-top: 0.9rem;
