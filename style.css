@@ -90,10 +90,30 @@ body {
 }
 
 /* Color themes per state */
-.overlay-start  { color: #00ffcc; }
-.overlay-win    { color: #aaff00; }
-.overlay-fail   { color: #ff4455; }
+.overlay-start    { color: #00ffcc; }
+.overlay-win      { color: #aaff00; }
+.overlay-fail     { color: #ff4455; }
 .overlay-gameover { color: #ff8800; }
+
+/* Per-level visual themes — override the overlay accent colour */
+.overlay-theme-0 { color: #00ccff; }   /* Data Tunnels  — bright cyan */
+.overlay-theme-1 { color: #88ddff; }   /* Cryo Vault    — ice blue   */
+.overlay-theme-2 { color: #aacc44; }   /* Iron Sector   — olive green*/
+.overlay-theme-3 { color: #ff7722; }   /* Plasma Core   — hot orange */
+.overlay-theme-4 { color: #4499ff; }   /* Electric Grid — arc blue   */
+
+/* The win / fail states take priority over the theme accent */
+.overlay-win.overlay-theme-0,
+.overlay-win.overlay-theme-1,
+.overlay-win.overlay-theme-2,
+.overlay-win.overlay-theme-3,
+.overlay-win.overlay-theme-4  { color: #aaff00; }
+
+.overlay-fail.overlay-theme-0,
+.overlay-fail.overlay-theme-1,
+.overlay-fail.overlay-theme-2,
+.overlay-fail.overlay-theme-3,
+.overlay-fail.overlay-theme-4 { color: #ff4455; }
 
 /* ── Info overlay ─────────────────────────────────────────── */
 #info-overlay {

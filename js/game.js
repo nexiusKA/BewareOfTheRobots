@@ -95,8 +95,13 @@ const Game = (() => {
   }
 
   function _loadLevel(index) {
-    const def = Levels.get(index);
-    if (!def) return false;
+    const config = Levels.get(index);
+    if (!config) return false;
+
+    // Apply visual theme for this level
+    const theme = Themes.get(index);
+    Tilemap.setTheme(theme);
+    UI.setTheme(theme);
 
     // Fixed viewport canvas — game always shows VIEWPORT_COLS×VIEWPORT_ROWS tiles
     _canvas.width  = VIEWPORT_W;
@@ -106,10 +111,13 @@ const Game = (() => {
     _camX = 0;
     _camY = 0;
 
+    // Generate a fresh map for this level
+    const generated = MapGen.generate(config);
+
     // Init subsystems
-    Tilemap.init(def.cols, def.rows, _randomizeKeyPositions(def));
-    Player.init(def.playerStart.col, def.playerStart.row, def.startBombs || 0);
-    EnemyManager.init(def.enemies);
+    Tilemap.init(generated.cols, generated.rows, _randomizeKeyPositions(generated));
+    Player.init(generated.playerStart.col, generated.playerStart.row, config.startBombs || 0);
+    EnemyManager.init(generated.enemies);
     BombManager.init();
 
     UI.setHUD(index + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
@@ -352,7 +360,8 @@ const Game = (() => {
     const H = _canvas.height;
 
     // Dark background for map region (shown around edges if map is smaller than viewport)
-    ctx.fillStyle = '#0a0a18';
+    const theme = Tilemap.getTheme();
+    ctx.fillStyle = theme ? theme.background : '#0a0a18';
     ctx.fillRect(0, _HUD_HEIGHT, W, H - _HUD_HEIGHT);
 
     // Map area — clip to viewport, then translate world coords into screen space
