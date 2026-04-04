@@ -81,6 +81,8 @@ const EnemyManager = (() => {
   const METER_HUE_MAX = 30;
 
   // ── Shared tunable config (debug panel) ──────────────────────────────────
+  // 0.8 s gives the player a clear, fair window to react to the rising meter.
+  // The original 0.2 s value was too fast for readable stealth gameplay.
   let _detectTime = 0.8;  // seconds of continuous visibility to fill the meter
   let _coneScale  = 0.70; // multiplier applied to visionRange and visionAngle
 
@@ -169,7 +171,7 @@ const EnemyManager = (() => {
 
       // 2. Angle check (vision cone)
       const toPlayer = Utils.angleTo(this.px, this.py, playerPx, playerPy);
-      if (!Utils.angleInCone(toPlayer, this._effectiveFacing(), angle)) return false;
+      if (!Utils.angleInCone(toPlayer, this.effectiveFacing(), angle)) return false;
 
       // 3. Line-of-sight check (walls block vision)
       return Tilemap.hasLineOfSight(this.px, this.py, playerPx, playerPy);
@@ -298,7 +300,7 @@ const EnemyManager = (() => {
     // ── Private helpers ───────────────────────────────────────────────────────
 
     // Effective facing accounts for the scanner's oscillating sweep angle.
-    _effectiveFacing() {
+    effectiveFacing() {
       return this.type === TYPE.SCANNER
         ? this.facing + this._sweepOffset
         : this.facing;
@@ -383,7 +385,7 @@ const EnemyManager = (() => {
 
       const r         = this.visionRange * _coneScale;
       const halfAngle = this.visionAngle * _coneScale;
-      const facing    = this._effectiveFacing();
+      const facing    = this.effectiveFacing();
 
       ctx.save();
       ctx.translate(this.px, this.py);
@@ -695,7 +697,7 @@ const EnemyManager = (() => {
       if (dSq > outerR * outerR) continue;
 
       const toPlayer   = Utils.angleTo(e.px, e.py, playerPx, playerPy);
-      const angleDiff  = Math.abs(Utils.angleDiff(e._effectiveFacing(), toPlayer));
+      const angleDiff  = Math.abs(Utils.angleDiff(e.effectiveFacing(), toPlayer));
       const coneEdge   = e.visionAngle * _coneScale * 1.3;
       if (angleDiff > coneEdge) continue;
 
@@ -720,16 +722,15 @@ const EnemyManager = (() => {
     }
   }
 
-  // Legacy aliases so bomb.js and any other callers need no changes.
-  function disableEnemiesInRadius(px, py, radius) { destroyEnemiesInRadius(px, py, radius); }
-  function killEnemiesInRadius(px, py, radius)    { destroyEnemiesInRadius(px, py, radius); }
+  // Legacy alias so bomb.js requires no changes.
+  function killEnemiesInRadius(px, py, radius) { destroyEnemiesInRadius(px, py, radius); }
 
   function getEnemies() { return _enemies; }
 
   return {
     init, update, draw,
     wasDetected, getNearAlert, getEnemies,
-    destroyEnemiesInRadius, disableEnemiesInRadius, killEnemiesInRadius,
+    destroyEnemiesInRadius, killEnemiesInRadius,
     TYPE, STATE,
     setDetectTime, setConeScale, getDetectTime, getConeScale,
   };
