@@ -6,8 +6,8 @@
 
 const FogManager = (() => {
 
-  const INITIAL_RADIUS = 5; // ≈10×10 starting visible area
-  const MOVE_RADIUS    = 3; // tiles revealed around player after each step
+  const INITIAL_RADIUS = 7; // ≈14×14 starting visible area
+  const MOVE_RADIUS    = 5; // tiles revealed around player after each step
 
   let _enabled  = false;
   let _explored = null;   // Uint8Array, flat row-major
