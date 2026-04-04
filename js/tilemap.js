@@ -88,6 +88,13 @@ const Tilemap = (() => {
   let _blinkTimer = 0;
   let _blinkPhase = 0;
 
+  // Door-open flash effects: key = "col,row", value = 0-1 (1=just opened, fades to 0)
+  let _doorOpenEffects = {};
+
+  function startDoorOpenEffect(col, row) {
+    _doorOpenEffects[`${col},${row}`] = 1.0;
+  }
+
   // Per-theme animated accents: an array of { x, y, type } built once
   // per init and reused across frames to avoid GC pressure.
   let _wallAccents = [];
@@ -95,6 +102,12 @@ const Tilemap = (() => {
   function update(dt) {
     _blinkTimer += dt;
     _blinkPhase = (Math.sin(_blinkTimer * 3) + 1) / 2; // 0-1
+
+    // Decay door-open flash effects (0.55 second fade)
+    for (const key in _doorOpenEffects) {
+      _doorOpenEffects[key] -= dt / 0.55;
+      if (_doorOpenEffects[key] <= 0) delete _doorOpenEffects[key];
+    }
   }
 
   // ── Main draw ────────────────────────────────────────────
@@ -131,6 +144,29 @@ const Tilemap = (() => {
           ctx.strokeStyle = fg;
           ctx.lineWidth   = 0.5;
           ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+        }
+
+        // Door-open flash overlay (shiny unlock effect)
+        const dk = `${col},${row}`;
+        if (_doorOpenEffects[dk] !== undefined) {
+          const progress = _doorOpenEffects[dk]; // 1→0
+          ctx.save();
+          // White inner flash
+          ctx.globalAlpha = progress * 0.75;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+          // Golden radial shimmer
+          ctx.globalAlpha = progress * 0.65;
+          const grad = ctx.createRadialGradient(
+            x + TILE_SIZE / 2, y + TILE_SIZE / 2, 1,
+            x + TILE_SIZE / 2, y + TILE_SIZE / 2, TILE_SIZE * 0.7
+          );
+          grad.addColorStop(0,   'rgba(255,240,120,1)');
+          grad.addColorStop(0.5, 'rgba(255,180, 40,0.5)');
+          grad.addColorStop(1,   'rgba(255,120,  0,0)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+          ctx.restore();
         }
       }
     }
@@ -461,6 +497,7 @@ const Tilemap = (() => {
     setTheme, getTheme,
     isPassable, isDoor, isKey, isExit, isAmmo,
     openDoor, removeKey, removeAmmo,
+    startDoorOpenEffect,
     pixelWidth, pixelHeight, cols, rows,
     hasLineOfSight,
     update, draw

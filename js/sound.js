@@ -123,5 +123,20 @@ const Sound = (() => {
     _tone(700, 'sine',     0.05, 0.04, now + 0.02);
   }
 
-  return { keyPickup, bombPlace, bombDetonate, move };
+  // Mechanical lock-click followed by a bright unlock chime
+  function doorOpen() {
+    const ctx = _getCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    // Three quick mechanical clicks
+    _tone(220, 'square', 0.04, 0.30, now);
+    _tone(280, 'square', 0.04, 0.28, now + 0.05);
+    _tone(350, 'square', 0.05, 0.25, now + 0.10);
+    // Bright metallic unlock shimmer
+    _tone(900,  'sine', 0.20, 0.40, now + 0.15);
+    _tone(1350, 'sine', 0.18, 0.30, now + 0.19);
+    _tone(1800, 'sine', 0.14, 0.20, now + 0.23);
+  }
+
+  return { keyPickup, bombPlace, bombDetonate, move, doorOpen };
 })();
