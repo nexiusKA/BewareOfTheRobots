@@ -124,6 +124,7 @@ const UI = (() => {
   let _hudFlash = 0;   // key-collected flash timer
   let _hudAmmoFlash = 0; // ammo-collected flash timer
   let _hudKeyCount = 0;
+  let _hudTotalKeys = 0;
   let _hudLevel = 1;
   let _hudTotalLevels = 1;
   let _hudBombs = 0;
@@ -135,11 +136,12 @@ const UI = (() => {
   function setGhostMode(enabled) { _ghostEnabled = enabled; }
   function setDebugMode(enabled) { _debugEnabled = enabled; }
 
-  function setHUD(level, totalLevels, keys, bombs) {
+  function setHUD(level, totalLevels, keys, bombs, totalKeys) {
     _hudLevel = level;
     _hudTotalLevels = totalLevels;
     _hudKeyCount = keys;
     _hudBombs = bombs !== undefined ? bombs : 0;
+    _hudTotalKeys = totalKeys !== undefined ? totalKeys : _hudTotalKeys;
   }
 
   function flashKeyCollect() {
@@ -204,7 +206,13 @@ const UI = (() => {
     ctx.shadowBlur  = 6;
     ctx.textAlign   = 'center';
     const centerX   = canvasW / 2;
-    ctx.fillText(`KEY ${_hudKeyCount > 0 ? '⬡'.repeat(_hudKeyCount) : '—'}`, centerX - 50, y0 + barH / 2);
+    ctx.font        = 'bold 13px Courier New';
+    ctx.fillText(`KEY ${_hudKeyCount > 0 ? '⬡'.repeat(_hudKeyCount) : '—'}`, centerX - 50, y0 + barH / 2 - 5);
+    ctx.font        = '10px Courier New';
+    ctx.shadowBlur  = 0;
+    ctx.fillStyle   = `${keyColor}99`;
+    ctx.fillText(`${_hudTotalKeys} PICKED UP`, centerX - 50, y0 + barH / 2 + 9);
+    ctx.font        = 'bold 13px Courier New';
 
     // Bombs — flash green on collect
     const bombColor = _hudAmmoFlash > 0
@@ -212,6 +220,7 @@ const UI = (() => {
       : (_hudBombs === 0 ? 'rgba(150,150,150,0.5)' : '#00ff88');
     ctx.fillStyle   = bombColor;
     ctx.shadowColor = bombColor;
+    ctx.shadowBlur  = 6;
     const bombDots  = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
     ctx.fillText(`💣 ${bombDots}`, centerX + 60, y0 + barH / 2);
 
