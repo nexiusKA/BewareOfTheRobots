@@ -6,7 +6,7 @@ const BombManager = (() => {
   const TS = Tilemap.TILE_SIZE;
 
   const FUSE_TIME        = 1.2;  // seconds until explosion
-  const EXPLODE_RADIUS   = TS * 2.6;   // ~125 px
+  const EXPLODE_RADIUS   = TS * 2.6;   // ~125px
   const EXPLODE_DURATION = 0.55; // seconds the flash/ring is visible
 
   let _bombs     = [];

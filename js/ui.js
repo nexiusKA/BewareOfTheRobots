@@ -122,7 +122,7 @@ const UI = (() => {
     ctx.lineWidth = 1;
     ctx.strokeRect(0, y0, canvasW, barH);
 
-    ctx.font = 'bold 13px Courier New';
+    ctx.font = 'bold 13px Courier New'; // 13px to fit sector, key, and bomb counters in the HUD bar
     ctx.textBaseline = 'middle';
 
     // Level
