@@ -315,6 +315,9 @@ const Game = (() => {
       UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
     }
 
+    // Advance player movement animation and process tile events
+    Player.update(dt, _onKeyCollect, _onExit, _onAmmoCollect);
+
     // Expand fog exploration to current player position
     FogManager.reveal(Player.getCol(), Player.getRow());
 
