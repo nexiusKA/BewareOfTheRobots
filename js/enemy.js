@@ -26,6 +26,7 @@ const EnemyManager = (() => {
 
   // Hue range (degrees) for the detection-meter bar colour gradient (orange → red)
   const METER_HUE_MAX = 30;
+  function setDetectTime(t) { _detectTime = Utils.clamp(+t || 0.8, 0.05, 30); }
   function setConeScale(s)  { _coneScale  = Utils.clamp(+s || 0.7, 0.1, 3.0); }
   function getDetectTime()  { return _detectTime; }
   function getConeScale()   { return _coneScale; }

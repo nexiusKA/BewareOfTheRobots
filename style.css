@@ -8,11 +8,12 @@ body {
   background: #0a0a1a;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
   font-family: 'Courier New', Courier, monospace;
-  overflow: hidden;
+  overflow: auto;
   color: #00ffcc;
+  padding: 16px;
 }
 
 #game-container {
