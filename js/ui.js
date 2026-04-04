@@ -47,7 +47,7 @@ const UI = (() => {
       'Place bombs with <b>[SPACE]</b> to destroy enemies.<br><br>' +
       '<small>WASD / Arrow keys to move &nbsp;|&nbsp; Space to place bomb &nbsp;|&nbsp; R to restart</small><br>' +
       '<small>Press <b>[I]</b> in-game for full controls &amp; enemy info</small><br>' +
-      '<details class="git-info">' +
+      '<details class="git-info" open>' +
         '<summary>Git Info</summary>' +
         '<dl class="git-info-grid">' +
           '<dt>Version</dt><dd>0.' + BUILD_INFO.run + '</dd>' +
