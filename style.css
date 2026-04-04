@@ -354,9 +354,9 @@ body {
   left: 50%;
   transform: translateX(-50%);
   grid-template-areas:
-    ". up . ."
+    ". up . info"
     "left . right bomb"
-    ". down . .";
+    ". down . restart";
   grid-template-columns: repeat(4, 64px);
   grid-template-rows: repeat(3, 64px);
   gap: 5px;
@@ -371,11 +371,13 @@ body {
 /* Force-show d-pad when manually activated via menu toggle */
 #dpad.dpad-active { display: grid; }
 
-#dpad-up    { grid-area: up; }
-#dpad-left  { grid-area: left; }
-#dpad-right { grid-area: right; }
-#dpad-down  { grid-area: down; }
-#dpad-bomb  { grid-area: bomb; }
+#dpad-up      { grid-area: up; }
+#dpad-left    { grid-area: left; }
+#dpad-right   { grid-area: right; }
+#dpad-down    { grid-area: down; }
+#dpad-bomb    { grid-area: bomb; }
+#dpad-info    { grid-area: info; }
+#dpad-restart { grid-area: restart; }
 
 .dpad-btn {
   background: rgba(0, 255, 204, 0.10);
@@ -411,6 +413,34 @@ body {
 .dpad-bomb-btn.dpad-pressed {
   background: rgba(255, 153, 0, 0.32);
   box-shadow: 0 0 14px rgba(255, 153, 0, 0.65);
+}
+
+/* Info button — soft blue/white accent */
+.dpad-info-btn {
+  color: #66ccff;
+  border-color: rgba(102, 204, 255, 0.45);
+  background: rgba(102, 204, 255, 0.10);
+  font-size: 1.4rem;
+}
+
+.dpad-info-btn:active,
+.dpad-info-btn.dpad-pressed {
+  background: rgba(102, 204, 255, 0.28);
+  box-shadow: 0 0 12px rgba(102, 204, 255, 0.55);
+}
+
+/* Restart button — yellow/amber accent */
+.dpad-restart-btn {
+  color: #ffdd44;
+  border-color: rgba(255, 221, 68, 0.45);
+  background: rgba(255, 221, 68, 0.10);
+  font-size: 1.5rem;
+}
+
+.dpad-restart-btn:active,
+.dpad-restart-btn.dpad-pressed {
+  background: rgba(255, 221, 68, 0.28);
+  box-shadow: 0 0 12px rgba(255, 221, 68, 0.55);
 }
 
 /* ── Mobile toggle button (shown in all menu overlays) ──── */

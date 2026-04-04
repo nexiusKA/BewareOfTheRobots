@@ -80,7 +80,9 @@
     btn.addEventListener('pointercancel', onRelease);
     btn.addEventListener('pointerleave',  onRelease);
   }
-  _setupActionButton('dpad-bomb', 'Space');
+  _setupActionButton('dpad-bomb',    'Space');
+  _setupActionButton('dpad-info',    'KeyI');
+  _setupActionButton('dpad-restart', 'KeyR');
 
   // ── Mobile D-pad menu toggle ───────────────────────────────
   const _dpad = document.getElementById('dpad');
