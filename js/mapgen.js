@@ -20,6 +20,7 @@ const MapGen = (() => {
   const E = 5; // EXIT
   const A = 6; // AMMO pickup
   const K = 4; // KEY (placeholder — redistributed by game.js)
+  const P = 7; // DEMOLITION perk pickup
 
   // ── Public API ───────────────────────────────────────────
 
@@ -91,6 +92,9 @@ const MapGen = (() => {
     const playerRow = rows - 2;
     const playerCol = 1;
     _placePickups(grid, cols, ammoCount, A, mainStart, mainEnd, playerCol, playerRow, 5);
+
+    // ── 7b. Demolition perk (one per level) ─────────────────
+    _placePickups(grid, cols, 1, P, mainStart, mainEnd, playerCol, playerRow, 6);
 
     // ── 8. Key placeholders ─────────────────────────────────
     // Place K tiles in the main zone so _randomizeKeyPositions

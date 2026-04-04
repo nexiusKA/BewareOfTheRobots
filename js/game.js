@@ -462,7 +462,7 @@ const Game = (() => {
     const startIdx = playerStart.row * cols + playerStart.col;
     const reachable = new Set([startIdx]);
     const queue = [startIdx];
-    const passable = new Set([T.FLOOR, T.DOOR_OPEN, T.EXIT, T.AMMO]);
+    const passable = new Set([T.FLOOR, T.DOOR_OPEN, T.EXIT, T.AMMO, T.DEMOLITION]);
     while (queue.length > 0) {
       const idx = queue.shift();
       const c   = idx % cols;

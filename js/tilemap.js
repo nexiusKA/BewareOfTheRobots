@@ -6,13 +6,14 @@ const Tilemap = (() => {
 
   // ── Tile constants ──────────────────────────────────────
   const TILE = {
-    FLOOR:    0,
-    WALL:     1,
-    DOOR:     2,   // locked door (closed)
-    DOOR_OPEN:3,   // open door (passable)
-    KEY:      4,   // collectible key
-    EXIT:     5,   // level exit
-    AMMO:     6,   // bomb ammo pickup
+    FLOOR:       0,
+    WALL:        1,
+    DOOR:        2,   // locked door (closed)
+    DOOR_OPEN:   3,   // open door (passable)
+    KEY:         4,   // collectible key
+    EXIT:        5,   // level exit
+    AMMO:        6,   // bomb ammo pickup
+    DEMOLITION:  7,   // demolition perk — bombs destroy walls
   };
 
   const TILE_SIZE = 48; // px
@@ -46,13 +47,14 @@ const Tilemap = (() => {
 
   function isPassable(col, row) {
     const t = get(col, row);
-    return t === TILE.FLOOR || t === TILE.DOOR_OPEN || t === TILE.KEY || t === TILE.EXIT || t === TILE.AMMO;
+    return t === TILE.FLOOR || t === TILE.DOOR_OPEN || t === TILE.KEY || t === TILE.EXIT || t === TILE.AMMO || t === TILE.DEMOLITION;
   }
 
-  function isDoor(col, row)  { return get(col, row) === TILE.DOOR; }
-  function isKey(col, row)   { return get(col, row) === TILE.KEY; }
-  function isExit(col, row)  { return get(col, row) === TILE.EXIT; }
-  function isAmmo(col, row)  { return get(col, row) === TILE.AMMO; }
+  function isDoor(col, row)           { return get(col, row) === TILE.DOOR; }
+  function isKey(col, row)            { return get(col, row) === TILE.KEY; }
+  function isExit(col, row)           { return get(col, row) === TILE.EXIT; }
+  function isAmmo(col, row)           { return get(col, row) === TILE.AMMO; }
+  function isDemolitionPerk(col, row) { return get(col, row) === TILE.DEMOLITION; }
 
   function openDoor(col, row) {
     if (get(col, row) === TILE.DOOR) set(col, row, TILE.DOOR_OPEN);
@@ -64,6 +66,29 @@ const Tilemap = (() => {
 
   function removeAmmo(col, row) {
     if (get(col, row) === TILE.AMMO) set(col, row, TILE.FLOOR);
+  }
+
+  function removeDemolitionPerk(col, row) {
+    if (get(col, row) === TILE.DEMOLITION) set(col, row, TILE.FLOOR);
+  }
+
+  // Destroy all non-border WALL tiles whose centre falls within radius pixels
+  // of (px, py). Called when a bomb explodes with the demolition perk active.
+  function destroyWallsInRadius(px, py, radius) {
+    const minC = Math.max(1, Math.floor((px - radius) / TILE_SIZE));
+    const maxC = Math.min(_cols - 2, Math.ceil((px + radius) / TILE_SIZE));
+    const minR = Math.max(1, Math.floor((py - radius) / TILE_SIZE));
+    const maxR = Math.min(_rows - 2, Math.ceil((py + radius) / TILE_SIZE));
+    const r2   = radius * radius;
+    for (let r = minR; r <= maxR; r++) {
+      for (let c = minC; c <= maxC; c++) {
+        if (get(c, r) !== TILE.WALL) continue;
+        const cx = c * TILE_SIZE + TILE_SIZE / 2;
+        const cy = r * TILE_SIZE + TILE_SIZE / 2;
+        const dx = cx - px, dy = cy - py;
+        if (dx * dx + dy * dy <= r2) set(c, r, TILE.FLOOR);
+      }
+    }
   }
 
   function pixelWidth()  { return _cols * TILE_SIZE; }
@@ -137,6 +162,8 @@ const Tilemap = (() => {
           _drawExit(ctx, x, y);
         } else if (tile === TILE.AMMO) {
           _drawAmmo(ctx, x, y);
+        } else if (tile === TILE.DEMOLITION) {
+          _drawDemolition(ctx, x, y);
         }
 
         // Subtle grid lines on passable tiles
@@ -451,6 +478,64 @@ const Tilemap = (() => {
     ctx.restore();
   }
 
+  // ── Demolition perk ──────────────────────────────────────
+  function _drawDemolition(ctx, x, y) {
+    const cx    = x + TILE_SIZE / 2;
+    const cy    = y + TILE_SIZE / 2;
+    const blink = _blinkPhase;
+    const glow  = 8 + blink * 10;
+
+    ctx.save();
+    ctx.shadowBlur  = glow;
+    ctx.shadowColor = '#ff6600';
+
+    // Outer pulsing ring
+    ctx.strokeStyle = `rgba(255,${100 + (blink * 80) | 0},0,${0.7 + blink * 0.3})`;
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Inner fill
+    ctx.fillStyle = `rgba(255,60,0,${0.18 + blink * 0.12})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bomb body
+    ctx.shadowBlur  = 5 + blink * 5;
+    ctx.shadowColor = '#ff8800';
+    ctx.fillStyle   = `rgba(255,${80 + (blink * 60) | 0},0,${0.85 + blink * 0.15})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy + 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Highlight on bomb
+    ctx.fillStyle = `rgba(255,255,255,${0.3 + blink * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(cx - 1.5, cy, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fuse spark
+    ctx.strokeStyle = `rgba(255,255,100,${0.6 + blink * 0.4})`;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx,     cy - 4);
+    ctx.lineTo(cx + 3, cy - 8);
+    ctx.stroke();
+
+    // Small wall-crack lines (cross) to indicate wall-breaking
+    ctx.strokeStyle = `rgba(255,180,80,${0.55 + blink * 0.25})`;
+    ctx.lineWidth   = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 11, cy - 3); ctx.lineTo(cx - 7, cy - 7);
+    ctx.moveTo(cx - 7,  cy - 3); ctx.lineTo(cx - 11, cy - 7);
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
   // ── Ammo ─────────────────────────────────────────────────
   function _drawAmmo(ctx, x, y) {
     const cx    = x + TILE_SIZE / 2;
@@ -495,8 +580,9 @@ const Tilemap = (() => {
     TILE, TILE_SIZE,
     init, get, set,
     setTheme, getTheme,
-    isPassable, isDoor, isKey, isExit, isAmmo,
-    openDoor, removeKey, removeAmmo,
+    isPassable, isDoor, isKey, isExit, isAmmo, isDemolitionPerk,
+    openDoor, removeKey, removeAmmo, removeDemolitionPerk,
+    destroyWallsInRadius,
     startDoorOpenEffect,
     pixelWidth, pixelHeight, cols, rows,
     hasLineOfSight,

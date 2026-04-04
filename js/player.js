@@ -47,6 +47,10 @@ const Player = (() => {
   // Ghost mode — allows movement through walls
   let _ghostMode = false;
 
+  // Demolition perk — bombs destroy walls
+  let _hasDemolition = false;
+  let _demoParticles = [];
+
   function init(col, row, startBombs) {
     _col = col;
     _row = row;
@@ -63,6 +67,8 @@ const Player = (() => {
     _stepParticles = [];
     _keyParticles = [];
     _ammoParticles = [];
+    _hasDemolition = false;
+    _demoParticles = [];
   }
 
   function getKeys()     { return _keys; }
@@ -73,6 +79,7 @@ const Player = (() => {
   function getBombAmmo() { return _bombAmmo; }
   function setGhostMode(enabled) { _ghostMode = enabled; }
   function isGhostMode()         { return _ghostMode; }
+  function hasDemolition()       { return _hasDemolition; }
 
   function addBombAmmo(n) {
     _bombAmmo = Utils.clamp(_bombAmmo + n, 0, MAX_BOMB_AMMO);
@@ -172,6 +179,24 @@ const Player = (() => {
     }
   }
 
+  function _spawnDemolitionParticles(px, py) {
+    const colors = ['#ff6600', '#ffaa00', '#ff3300', '#ffffff', '#ffcc44'];
+    for (let i = 0; i < 28; i++) {
+      const angle = (i / 28) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      const speed = 55 + Math.random() * 110;
+      const life  = 0.5 + Math.random() * 0.4;
+      _demoParticles.push({
+        x: px, y: py,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life,
+        maxLife: life,
+        size: 3 + Math.random() * 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      });
+    }
+  }
+
   function update(dt, onCollect, onExit, onAmmoCollect) {
     _bobTimer += dt;
 
@@ -211,6 +236,18 @@ const Player = (() => {
       if (p.life <= 0) _ammoParticles.splice(i, 1);
     }
 
+    // Update demolition perk pickup particles
+    for (let i = _demoParticles.length - 1; i >= 0; i--) {
+      const p = _demoParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      const damp = Math.pow(0.85, dt * 60);
+      p.vx *= damp;
+      p.vy *= damp;
+      if (p.life <= 0) _demoParticles.splice(i, 1);
+    }
+
     if (_moving) {
       _moveTimer += dt;
       const t = Utils.clamp(_moveTimer / MOVE_DURATION, 0, 1);
@@ -236,6 +273,12 @@ const Player = (() => {
           Tilemap.removeAmmo(_col, _row);
           _spawnAmmoParticles(_tx, _ty);
           if (onAmmoCollect) onAmmoCollect();
+        }
+        if (Tilemap.isDemolitionPerk(_col, _row)) {
+          _hasDemolition = true;
+          Tilemap.removeDemolitionPerk(_col, _row);
+          _spawnDemolitionParticles(_tx, _ty);
+          if (onAmmoCollect) onAmmoCollect(); // reuse HUD-refresh callback
         }
         if (Tilemap.isExit(_col, _row)) {
           if (onExit) onExit();
@@ -290,6 +333,24 @@ const Player = (() => {
       ctx.restore();
     }
 
+    // Demolition perk pickup burst particles
+    if (_demoParticles.length > 0) {
+      ctx.save();
+      for (const p of _demoParticles) {
+        const alpha = p.life / p.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.shadowBlur = 9;
+        ctx.shadowColor = '#ff6600';
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.4 + alpha * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
     const x = _px;
     const y = _py;
     const r = TS * 0.38;
@@ -302,6 +363,20 @@ const Player = (() => {
     // Glow
     ctx.shadowBlur = 18;
     ctx.shadowColor = '#00ccff';
+
+    // Demolition-perk active ring (orange pulsing outer ring)
+    if (_hasDemolition) {
+      const pulse = (Math.sin(_bobTimer * 6) + 1) / 2;
+      ctx.strokeStyle = `rgba(255,${80 + (pulse * 80) | 0},0,${0.55 + pulse * 0.35})`;
+      ctx.lineWidth   = 2.5;
+      ctx.shadowColor = '#ff6600';
+      ctx.shadowBlur  = 10 + pulse * 10;
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur  = 18;
+      ctx.shadowColor = '#00ccff';
+    }
 
     // Body
     ctx.fillStyle = '#00aaff';
@@ -343,6 +418,7 @@ const Player = (() => {
     tryMove, isMoving,
     getKeys, getCol, getRow, getPx, getPy,
     getBombAmmo, addBombAmmo, useBomb,
-    setGhostMode, isGhostMode
+    setGhostMode, isGhostMode,
+    hasDemolition
   };
 })();
