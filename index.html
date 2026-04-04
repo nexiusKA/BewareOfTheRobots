@@ -16,7 +16,22 @@
         <button id="overlay-btn"></button>
       </div>
     </div>
-    <!-- Info / manual overlay — toggled with [I] key -->
+    <!-- Debug settings panel — toggled with [#] key -->
+    <div id="debug-panel" class="hidden">
+      <div id="debug-panel-content">
+        <div class="debug-header">⚙ DEBUG SETTINGS</div>
+        <div class="debug-row">
+          <label for="debug-detect-time">Detect time (s)</label>
+          <input type="number" id="debug-detect-time" min="0.05" max="30" step="0.1" value="0.80" />
+        </div>
+        <div class="debug-row">
+          <label for="debug-cone-scale">Cone scale (%)</label>
+          <input type="number" id="debug-cone-scale" min="10" max="300" step="5" value="70" />
+        </div>
+        <button id="debug-apply-btn">APPLY  [↵]</button>
+        <div class="debug-note">Detection is <b>disabled</b> in debug mode</div>
+      </div>
+    </div>
     <div id="info-overlay" class="hidden">
       <div id="info-content">
         <h2 id="info-title">★ MISSION BRIEFING ★</h2>
@@ -28,7 +43,7 @@
             <tr><td>[SPACE]</td><td>Place bomb at current position</td></tr>
             <tr><td>[R]</td><td>Restart the current level</td></tr>
             <tr><td>[I] / [ESC]</td><td>Toggle this info screen</td></tr>
-            <tr><td>[#]</td><td>Debug mode — disables enemy detection</td></tr>
+            <tr><td>[#]</td><td>Debug mode — disables detection &amp; opens settings panel</td></tr>
           </table>
         </div>
 
@@ -46,6 +61,7 @@
           <div class="info-header">MECHANICS</div>
           <ul class="info-list">
             <li>Time <b>slows down</b> when you are near an enemy's vision cone — use it to think</li>
+            <li>Enemies do <b>not</b> detect you instantly — a short buildup meter (orange→red bar above them) fills while they see you; leave their cone before it fills to avoid detection</li>
             <li><b>⚠ DANGER</b> warning pulses on screen when detection risk is very high</li>
             <li>A <b>red vignette</b> intensifies around the screen as threat increases</li>
             <li>A <b>1.5 s grace period</b> prevents detection at the start of every level</li>

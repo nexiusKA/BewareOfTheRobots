@@ -16,6 +16,20 @@ const EnemyManager = (() => {
   let _alertFlash = 0;    // seconds remaining for global alert flash
   let _detected  = false; // has detection occurred this frame?
 
+  // ── Detection config (tunable via debug mode) ────────────
+  let _detectTime = 0.8;   // seconds of continuous visibility needed to trigger detection
+  let _coneScale  = 0.70;  // scale factor applied to both visionRange and visionAngle
+
+  // Fraction of _detectTime it takes the meter to fully drain when out of sight
+  // (< 1.0 means it drains faster than it fills — approx. 1.54× fill speed)
+  const METER_DRAIN_RATIO = 0.65;
+
+  // Hue range (degrees) for the detection-meter bar colour gradient (orange → red)
+  const METER_HUE_MAX = 30;
+  function setConeScale(s)  { _coneScale  = Utils.clamp(+s || 0.7, 0.1, 3.0); }
+  function getDetectTime()  { return _detectTime; }
+  function getConeScale()   { return _coneScale; }
+
   // ── Enemy constructor ────────────────────────────────────
   function _makeEnemy(def) {
     const patrol = def.patrol;
@@ -40,6 +54,9 @@ const EnemyManager = (() => {
       // Visual state
       alertTimer: 0,   // flash timer
       bobTimer: Math.random() * Math.PI * 2,
+
+      // Detection state
+      detectionMeter: 0, // 0-1 fill; triggers detection when it reaches 1
 
       // Scanner sweep state
       sweepTimer: Math.random() * Math.PI * 2,
@@ -68,7 +85,7 @@ const EnemyManager = (() => {
     for (const e of _enemies) {
       e.bobTimer += dt;
       _updateMovement(e, dt);
-      _checkDetection(e, playerPx, playerPy);
+      _checkDetection(e, playerPx, playerPy, dt);
     }
   }
 
@@ -112,21 +129,34 @@ const EnemyManager = (() => {
     if (e.alertTimer > 0) e.alertTimer -= dt;
   }
 
-  function _checkDetection(e, playerPx, playerPy) {
+  function _checkDetection(e, playerPx, playerPy, dt) {
+    const scaledRange = e.visionRange * _coneScale;
+    const scaledAngle = e.visionAngle * _coneScale;
+
     const dSq = Utils.dist2(e.px, e.py, playerPx, playerPy);
-    if (dSq > e.visionRange * e.visionRange) return;
+    let inView = false;
 
-    const angleToPlayer = Utils.angleTo(e.px, e.py, playerPx, playerPy);
-    // Use swept facing for scanner type
-    if (!Utils.angleInCone(angleToPlayer, _effectiveFacing(e), e.visionAngle)) return;
+    if (dSq <= scaledRange * scaledRange) {
+      const angleToPlayer = Utils.angleTo(e.px, e.py, playerPx, playerPy);
+      if (Utils.angleInCone(angleToPlayer, _effectiveFacing(e), scaledAngle)) {
+        if (Tilemap.hasLineOfSight(e.px, e.py, playerPx, playerPy)) {
+          inView = true;
+        }
+      }
+    }
 
-    // LOS check
-    if (!Tilemap.hasLineOfSight(e.px, e.py, playerPx, playerPy)) return;
-
-    // Detection! Hunter has a longer alert flash for dramatic effect
-    _detected = true;
-    e.alertTimer = e.type === TYPE.HUNTER ? 1.0 : 0.6;
-    _alertFlash = e.alertTimer;
+    if (inView) {
+      e.detectionMeter = Math.min(1, e.detectionMeter + dt / _detectTime);
+      if (e.detectionMeter >= 1) {
+        // Detection! Hunter has a longer alert flash for dramatic effect
+        _detected = true;
+        e.alertTimer = e.type === TYPE.HUNTER ? 1.0 : 0.6;
+        _alertFlash = e.alertTimer;
+      }
+    } else {
+      // Drain detection meter when player leaves the cone
+      e.detectionMeter = Math.max(0, e.detectionMeter - dt / (_detectTime * METER_DRAIN_RATIO));
+    }
   }
 
   // Returns 0-1 proximity alert for "near detection" slow-mo
@@ -134,12 +164,12 @@ const EnemyManager = (() => {
     let maxThreat = 0;
     for (const e of _enemies) {
       const dSq = Utils.dist2(e.px, e.py, playerPx, playerPy);
-      const outerR = e.visionRange * 1.3;
+      const outerR = e.visionRange * _coneScale * 1.3;
       if (dSq > outerR * outerR) continue;
 
       const angleToPlayer = Utils.angleTo(e.px, e.py, playerPx, playerPy);
       const angleDiff = Math.abs(Utils.angleDiff(_effectiveFacing(e), angleToPlayer));
-      const coneEdge = e.visionAngle * 1.3;
+      const coneEdge = e.visionAngle * _coneScale * 1.3;
       if (angleDiff > coneEdge) continue;
 
       const dist = Math.sqrt(dSq);
@@ -162,8 +192,8 @@ const EnemyManager = (() => {
 
   function _drawVisionCone(ctx, e) {
     const isAlert = e.alertTimer > 0;
-    const r = e.visionRange;
-    const halfAngle = e.visionAngle;
+    const r = e.visionRange * _coneScale;         // scaled range
+    const halfAngle = e.visionAngle * _coneScale; // scaled half-angle
     const eFacing = _effectiveFacing(e);
 
     ctx.save();
@@ -245,6 +275,25 @@ const EnemyManager = (() => {
       ctx.shadowBlur = 10;
       ctx.shadowColor = '#ff0000';
       ctx.fillText('!', x, y - r - 10);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    // Detection-meter progress bar (only visible while filling, hidden during alert)
+    if (e.detectionMeter > 0.05 && !isAlert) {
+      const barW = TS * 0.72;
+      const barH = 4;
+      const barX = x - barW / 2;
+      const barY = y - r - 16;
+      const hue  = Math.round(METER_HUE_MAX * (1 - e.detectionMeter)); // orange → red
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.shadowBlur  = 7;
+      ctx.shadowColor = `hsl(${hue},100%,55%)`;
+      ctx.fillStyle   = `hsl(${hue},100%,55%)`;
+      ctx.fillRect(barX, barY, barW * e.detectionMeter, barH);
       ctx.shadowBlur = 0;
       ctx.restore();
     }
@@ -373,5 +422,6 @@ const EnemyManager = (() => {
     }
   }
 
-  return { init, update, draw, wasDetected, getNearAlert, getEnemies, killEnemiesInRadius, TYPE };
+  return { init, update, draw, wasDetected, getNearAlert, getEnemies, killEnemiesInRadius, TYPE,
+           setDetectTime, setConeScale, getDetectTime, getConeScale };
 })();
