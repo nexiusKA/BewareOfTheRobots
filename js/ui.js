@@ -188,7 +188,7 @@ const UI = (() => {
   const MINIMAP_PAD  = 10;  // padding from canvas edge
   let _minimapPulse  = 0;   // for player dot pulsing
 
-  function drawMinimap(ctx, canvasW, canvasH, playerCol, playerRow) {
+  function drawMinimap(ctx, canvasW, canvasH, playerCol, playerRow, debugMode) {
     const cols = Tilemap.cols();
     const rows = Tilemap.rows();
     if (cols === 0 || rows === 0) return;
@@ -241,11 +241,11 @@ const UI = (() => {
         } else if (tile === T.DOOR) {
           ctx.fillStyle = '#ff8800';
         } else if (tile === T.KEY) {
-          ctx.fillStyle = '#ffee00';
+          ctx.fillStyle = debugMode ? '#ffee00' : '#141428';
         } else if (tile === T.EXIT) {
           ctx.fillStyle = '#00ffcc';
         } else if (tile === T.AMMO) {
-          ctx.fillStyle = '#00ff88';
+          ctx.fillStyle = debugMode ? '#00ff88' : '#141428';
         } else {
           ctx.fillStyle = '#141428';
         }

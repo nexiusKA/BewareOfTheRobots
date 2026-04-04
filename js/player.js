@@ -107,6 +107,7 @@ const Player = (() => {
     _moving = true;
     _moveTimer = 0;
 
+    Sound.move();
     _spawnStepParticles();
   }
 

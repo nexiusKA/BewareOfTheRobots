@@ -114,5 +114,14 @@ const Sound = (() => {
     _tone(1200, 'square', 0.08, 0.25, now);
   }
 
-  return { keyPickup, bombPlace, bombDetonate };
+  // Short soft electronic tap played on every successful tile move
+  function move() {
+    const ctx = _getCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    _tone(520, 'triangle', 0.07, 0.06, now);
+    _tone(700, 'sine',     0.05, 0.04, now + 0.02);
+  }
+
+  return { keyPickup, bombPlace, bombDetonate, move };
 })();
