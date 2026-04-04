@@ -77,11 +77,26 @@
           <div class="info-header">MECHANICS</div>
           <ul class="info-list">
             <li>Time <b>slows down</b> when you are near an enemy's vision cone — use it to think</li>
-            <li>Enemies do <b>not</b> detect you instantly — a short buildup meter (orange→red bar above them) fills while they see you; leave their cone before it fills to avoid detection</li>
+            <li>Enemies do <b>not</b> detect you instantly — a buildup meter (orange→red bar above them) fills while they see you; leave their cone before it fills</li>
+            <li>Detection needs <b>vision range + vision angle + clear line of sight</b> — walls block it</li>
+            <li>Meter at full → enemy enters <b>ALERT</b> (red cone) and chases your position at speed</li>
+            <li>Escape the chase: break line of sight and stay hidden — the enemy eventually switches to <b>SEARCH</b> (orange cone)</li>
+            <li>In SEARCH the enemy walks to your <b>last known position</b>, scans briefly, then returns to patrol</li>
             <li><b>⚠ DANGER</b> warning pulses on screen when detection risk is very high</li>
             <li>A <b>red vignette</b> intensifies around the screen as threat increases</li>
             <li>A <b>1.5 s grace period</b> prevents detection at the start of every level</li>
-            <li>Enemies destroyed by bombs are <b>permanently removed</b> from that level</li>
+            <li>Bombs <b>permanently destroy</b> enemies in their blast radius — wreckage stays on the map</li>
+          </ul>
+        </div>
+
+        <div class="info-section">
+          <div class="info-header">ENEMY STATES</div>
+          <ul class="info-list">
+            <li><b>PATROL</b> (yellow cone) — Moving between waypoints, pausing briefly at each turn</li>
+            <li><b>SUSPICIOUS</b> (orange cone + ?) — Player spotted; meter filling; keep moving to escape</li>
+            <li><b>ALERT</b> (red cone + !) — Fully detected; chasing your last known position</li>
+            <li><b>SEARCH</b> (orange cone + ?) — Lost you; heading to last known spot then scanning</li>
+            <li><b>DESTROYED</b> — Bomb wreckage; permanently inactive</li>
           </ul>
         </div>
 
