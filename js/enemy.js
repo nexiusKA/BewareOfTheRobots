@@ -20,7 +20,12 @@ const EnemyManager = (() => {
   let _detectTime = 0.8;   // seconds of continuous visibility needed to trigger detection
   let _coneScale  = 0.70;  // scale factor applied to both visionRange and visionAngle
 
-  function setDetectTime(t) { _detectTime = Math.max(0.05, +t || 0.8); }
+  // Fraction of _detectTime it takes the meter to fully drain when out of sight
+  // (< 1.0 means it drains faster than it fills — approx. 1.54× fill speed)
+  const METER_DRAIN_RATIO = 0.65;
+
+  // Hue range (degrees) for the detection-meter bar colour gradient (orange → red)
+  const METER_HUE_MAX = 30;
   function setConeScale(s)  { _coneScale  = Utils.clamp(+s || 0.7, 0.1, 3.0); }
   function getDetectTime()  { return _detectTime; }
   function getConeScale()   { return _coneScale; }
@@ -149,8 +154,8 @@ const EnemyManager = (() => {
         _alertFlash = e.alertTimer;
       }
     } else {
-      // Drain detection meter when player leaves the cone (drains at ~1.5× fill speed)
-      e.detectionMeter = Math.max(0, e.detectionMeter - dt / (_detectTime * 0.65));
+      // Drain detection meter when player leaves the cone
+      e.detectionMeter = Math.max(0, e.detectionMeter - dt / (_detectTime * METER_DRAIN_RATIO));
     }
   }
 
@@ -280,7 +285,7 @@ const EnemyManager = (() => {
       const barH = 4;
       const barX = x - barW / 2;
       const barY = y - r - 16;
-      const hue  = Math.round(30 * (1 - e.detectionMeter)); // orange (30°) → red (0°)
+      const hue  = Math.round(METER_HUE_MAX * (1 - e.detectionMeter)); // orange → red
 
       ctx.save();
       ctx.fillStyle = 'rgba(0,0,0,0.55)';

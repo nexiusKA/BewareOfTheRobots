@@ -63,9 +63,10 @@ const Game = (() => {
     const _applyBtn  = document.getElementById('debug-apply-btn');
     const _dtInput   = document.getElementById('debug-detect-time');
     const _csInput   = document.getElementById('debug-cone-scale');
+    const _stopAndApplyOnEnter = e => { e.stopPropagation(); if (e.key === 'Enter') _applyDebugSettings(); };
     if (_applyBtn) _applyBtn.addEventListener('click', _applyDebugSettings);
-    if (_dtInput)  _dtInput.addEventListener('keydown',  e => { e.stopPropagation(); if (e.key === 'Enter') _applyDebugSettings(); });
-    if (_csInput)  _csInput.addEventListener('keydown',  e => { e.stopPropagation(); if (e.key === 'Enter') _applyDebugSettings(); });
+    if (_dtInput)  _dtInput.addEventListener('keydown', _stopAndApplyOnEnter);
+    if (_csInput)  _csInput.addEventListener('keydown', _stopAndApplyOnEnter);
 
     _loadLevel(_currentLevel);
     UI.showStart(Levels.count(), _onStart);
@@ -370,9 +371,9 @@ const Game = (() => {
 
     // Locate the highest-indexed door row (= last barrier above the player zone)
     let lastDoorRow = 0;
-    outer: for (let r = rows - 1; r >= 0; r--) {
+    findLastDoorRow: for (let r = rows - 1; r >= 0; r--) {
       for (let c = 0; c < cols; c++) {
-        if (grid[r * cols + c] === T.DOOR) { lastDoorRow = r; break outer; }
+        if (grid[r * cols + c] === T.DOOR) { lastDoorRow = r; break findLastDoorRow; }
       }
     }
 
@@ -409,8 +410,8 @@ const Game = (() => {
         if (!reachable.has(idx)) continue;
         if (grid[idx] !== T.FLOOR) continue;
         if (idx === startIdx) continue;
-        const mhDist = Math.abs(r - playerStart.row) + Math.abs(c - playerStart.col);
-        if (mhDist < 2) continue;
+        const manhattanDist = Math.abs(r - playerStart.row) + Math.abs(c - playerStart.col);
+        if (manhattanDist < 2) continue;
         candidates.push(idx);
       }
     }
