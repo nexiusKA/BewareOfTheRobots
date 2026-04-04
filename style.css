@@ -325,3 +325,52 @@ body {
   text-align: center;
   line-height: 1.4;
 }
+
+/* ── Mobile D-pad ────────────────────────────────────────── */
+#dpad {
+  display: none; /* hidden on non-touch devices */
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  grid-template-areas:
+    ". up ."
+    "left . right"
+    ". down .";
+  grid-template-columns: repeat(3, 64px);
+  grid-template-rows: repeat(3, 64px);
+  gap: 5px;
+  user-select: none;
+  z-index: 50;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  #dpad { display: grid; }
+}
+
+#dpad-up    { grid-area: up; }
+#dpad-left  { grid-area: left; }
+#dpad-right { grid-area: right; }
+#dpad-down  { grid-area: down; }
+
+.dpad-btn {
+  background: rgba(0, 255, 204, 0.10);
+  border: 2px solid rgba(0, 255, 204, 0.45);
+  border-radius: 8px;
+  color: #00ffcc;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.08s, box-shadow 0.08s;
+}
+
+.dpad-btn:active,
+.dpad-btn.dpad-pressed {
+  background: rgba(0, 255, 204, 0.28);
+  box-shadow: 0 0 12px rgba(0, 255, 204, 0.55);
+}
