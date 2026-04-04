@@ -52,7 +52,7 @@ const UI = (() => {
 
       '<div class="start-section">' +
         '<div class="start-section-header">⚡ KEY MECHANICS</div>' +
-        '<div class="start-feat-row">⏱️ Time <b>slows</b> when you near an enemy's vision cone — use it to plan</div>' +
+        '<div class="start-feat-row">⏱️ Time <b>slows</b> when you near an enemy\'s vision cone — use it to plan</div>' +
         '<div class="start-feat-row">⚠️ A detection meter fills above enemies — escape the cone before it maxes out</div>' +
         '<div class="start-feat-row">🛡️ A <b>1.5s grace period</b> protects you at the start of every sector</div>' +
         '<div class="start-feat-row">🌫️ <b>Fog of War</b> <small>[F]</small> &nbsp;•&nbsp; 👻 <b>Ghost Mode</b> <small>[G]</small> &nbsp;•&nbsp; 📋 <b>Full info</b> <small>[I]</small></div>' +
