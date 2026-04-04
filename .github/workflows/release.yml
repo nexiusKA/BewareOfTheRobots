@@ -18,6 +18,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Get build date
+        id: date
+        run: |
+          set -e
+          echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
       - name: Inject build info into version.js
         run: |
           cat > js/version.js <<'JSEOF'
@@ -29,6 +35,7 @@ const BUILD_INFO = (function () {
     run:    '${{ github.run_number }}',
     sha:    '${{ github.sha }}',
     branch: '${{ github.ref_name }}',
+    date:   '${{ steps.date.outputs.date }}',
   };
 })();
 JSEOF
