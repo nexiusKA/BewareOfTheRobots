@@ -23,8 +23,9 @@ const UI = (() => {
     overlayMsg.innerHTML =
       'A stealth puzzle game.<br>' +
       'Collect keys, open doors, reach the exit.<br>' +
-      'Avoid the patrol robots at all costs.<br><br>' +
-      '<small>WASD / Arrow keys to move &nbsp;|&nbsp; R to restart</small>';
+      'Avoid the patrol robots at all costs.<br>' +
+      'Place bombs with <b>[SPACE]</b> to destroy enemies.<br><br>' +
+      '<small>WASD / Arrow keys to move &nbsp;|&nbsp; Space to place bomb &nbsp;|&nbsp; R to restart</small>';
     overlayBtn.textContent = 'START GAME';
     overlayBtn.onclick = onStart;
     overlay.classList.remove('hidden');
@@ -78,22 +79,30 @@ const UI = (() => {
 
   // ── HUD (drawn on canvas) ────────────────────────────────
   let _hudFlash = 0;   // key-collected flash timer
+  let _hudAmmoFlash = 0; // ammo-collected flash timer
   let _hudKeyCount = 0;
   let _hudLevel = 1;
   let _hudTotalLevels = 1;
+  let _hudBombs = 0;
 
-  function setHUD(level, totalLevels, keys) {
+  function setHUD(level, totalLevels, keys, bombs) {
     _hudLevel = level;
     _hudTotalLevels = totalLevels;
     _hudKeyCount = keys;
+    _hudBombs = bombs !== undefined ? bombs : 0;
   }
 
   function flashKeyCollect() {
     _hudFlash = 0.5;
   }
 
+  function flashAmmoCollect() {
+    _hudAmmoFlash = 0.5;
+  }
+
   function update(dt) {
     if (_hudFlash > 0) _hudFlash -= dt;
+    if (_hudAmmoFlash > 0) _hudAmmoFlash -= dt;
     if (_dangerLevel >= DANGER_THRESHOLD) {
       _dangerPulse += dt;
     } else {
@@ -113,7 +122,7 @@ const UI = (() => {
     ctx.lineWidth = 1;
     ctx.strokeRect(0, y0, canvasW, barH);
 
-    ctx.font = 'bold 14px Courier New';
+    ctx.font = 'bold 13px Courier New'; // 13px to fit sector, key, and bomb counters in the HUD bar
     ctx.textBaseline = 'middle';
 
     // Level
@@ -130,7 +139,17 @@ const UI = (() => {
     ctx.fillStyle = keyColor;
     ctx.shadowColor = keyColor;
     ctx.textAlign = 'center';
-    ctx.fillText(`KEY ${_hudKeyCount > 0 ? '⬡'.repeat(_hudKeyCount) : '—'}`, canvasW / 2, y0 + barH / 2);
+    const centerX = canvasW / 2;
+    ctx.fillText(`KEY ${_hudKeyCount > 0 ? '⬡'.repeat(_hudKeyCount) : '—'}`, centerX - 50, y0 + barH / 2);
+
+    // Bombs — flash green on collect
+    const bombColor = _hudAmmoFlash > 0
+      ? `rgba(0,255,136,${0.6 + (_hudAmmoFlash / 0.5) * 0.4})`
+      : (_hudBombs === 0 ? 'rgba(150,150,150,0.5)' : '#00ff88');
+    ctx.fillStyle = bombColor;
+    ctx.shadowColor = bombColor;
+    const bombDots = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
+    ctx.fillText(`💣 ${bombDots}`, centerX + 60, y0 + barH / 2);
 
     // Hint
     ctx.fillStyle = 'rgba(0,255,204,0.45)';
@@ -201,7 +220,7 @@ const UI = (() => {
 
   return {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
-    setHUD, flashKeyCollect, setVignette, setDanger,
+    setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
     update, drawHUD, drawScanlines, drawVignette, drawDangerWarning
   };
 })();

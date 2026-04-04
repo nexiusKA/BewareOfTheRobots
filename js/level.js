@@ -14,11 +14,13 @@ const Levels = (() => {
   const D = 2; // door (locked)
   const K = 4; // key
   const E = 5; // exit
+  const A = 6; // ammo pickup (+2 bombs)
 
   /*
    * Level descriptor shape:
    * {
    *   cols, rows,
+   *   startBombs: number,   // bombs given at level start
    *   map: flat row-major array,
    *   playerStart: { col, row },
    *   enemies: [{
@@ -43,6 +45,7 @@ const Levels = (() => {
   const level1 = {
     cols: 17,
     rows: 11,
+    startBombs: 3,
     map: [
       W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
       W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (15,1)
@@ -53,7 +56,7 @@ const Levels = (() => {
       W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 6
       W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
       W,_,W,W,_,_,W,W,_,_,_,_,W,W,_,_,W,   // row 8
-      W,_,_,K,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9  — key at (3,9); player at (1,9)
+      W,_,_,K,_,_,_,_,_,_,_,_,_,_,A,_,W,   // row 9  — key at (3,9); ammo at (14,9); player at (1,9)
       W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 10
     ],
     playerStart: { col: 1, row: 9 },
@@ -97,6 +100,7 @@ const Levels = (() => {
   const level2 = {
     cols: 19,
     rows: 13,
+    startBombs: 3,
     map: [
       W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
       W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (17,1)
@@ -109,7 +113,7 @@ const Levels = (() => {
       W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 8
       W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
       W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 10
-      W,_,_,K,_,_,_,_,_,_,_,_,K,_,_,_,_,_,W,   // row 11 — keys at (3,11),(12,11); player at (1,11)
+      W,_,_,K,_,_,_,_,_,_,_,_,K,_,_,A,_,_,W,   // row 11 — keys at (3,11),(12,11); ammo at (15,11); player at (1,11)
       W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 12
     ],
     playerStart: { col: 1, row: 11 },
@@ -177,6 +181,7 @@ const Levels = (() => {
   const level3 = {
     cols: 21,
     rows: 15,
+    startBombs: 2,
     map: [
       W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
       W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (19,1)
@@ -191,7 +196,7 @@ const Levels = (() => {
       W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,   // row 10 — door at (13,10)
       W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
       W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 12
-      W,_,_,K,_,_,_,_,_,_,K,_,_,_,_,_,K,_,_,_,W,   // row 13 — keys at (3,13),(10,13),(16,13); player at (1,13)
+      W,_,_,K,_,_,_,_,_,_,K,_,_,_,_,_,K,_,A,_,W,   // row 13 — keys at (3,13),(10,13),(16,13); ammo at (18,13); player at (1,13)
       W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 14
     ],
     playerStart: { col: 1, row: 13 },
@@ -263,7 +268,512 @@ const Levels = (() => {
     ],
   };
 
-  const _levels = [level1, level2, level3];
+  // ── Level 4 (23×17) — 2 keys, 2 doors ─────────────────────
+  // Player: (1,15)  Keys: (3,15),(12,15)  Ammo: (18,15)
+  // Doors: (12,2),(9,6)  Exit: (21,1)
+  const level4 = {
+    cols: 23,
+    rows: 17,
+    startBombs: 2,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (21,1)
+      W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,   // row 2  — door at (12,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 4
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 6  — door at (9,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 8
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 10
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 12
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 13
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 14
+      W,_,_,K,_,_,_,_,_,_,_,_,K,_,_,_,_,_,A,_,_,_,W,   // row 15 — keys (3,15)(12,15); ammo (18,15); player (1,15)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 16
+    ],
+    playerStart: { col: 1, row: 15 },
+    enemies: [
+      {
+        patrol: [{ col: 1, row: 1 }, { col: 20, row: 1 }],
+        speed: 2.5,
+        visionRange: 195,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 3 }, { col: 21, row: 3 }, { col: 21, row: 5 }, { col: 1, row: 5 }],
+        speed: 2.2,
+        visionRange: 185,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 21, row: 9 }, { col: 1, row: 9 }],
+        speed: 2.3,
+        visionRange: 188,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 21, row: 15 }, { col: 5, row: 15 }],
+        speed: 2.6,
+        visionRange: 175,
+        visionAngle: Math.PI / 2.8,
+      },
+    ],
+  };
+
+  // ── Level 5 (23×17) — 3 keys, 3 doors ─────────────────────
+  // Player: (1,15)  Keys: (3,15),(10,15),(18,15)  Ammo: (16,15)
+  // Doors: (11,2),(7,6),(15,10)  Exit: (21,1)
+  const level5 = {
+    cols: 23,
+    rows: 17,
+    startBombs: 2,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (21,1)
+      W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,   // row 2  — door at (11,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 4
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 6  — door at (7,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 8
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,   // row 10 — door at (15,10)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 12
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 13
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 14
+      W,_,_,K,_,_,_,_,_,_,K,_,_,_,_,_,A,_,K,_,_,_,W,   // row 15 — keys (3,15)(10,15)(18,15); ammo (16,15); player (1,15)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 16
+    ],
+    playerStart: { col: 1, row: 15 },
+    enemies: [
+      {
+        patrol: [{ col: 1, row: 1 }, { col: 20, row: 1 }],
+        speed: 2.6,
+        visionRange: 195,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 3 }, { col: 10, row: 3 }, { col: 10, row: 5 }, { col: 1, row: 5 }],
+        speed: 2.4,
+        visionRange: 180,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 12, row: 3 }, { col: 21, row: 3 }, { col: 21, row: 5 }, { col: 12, row: 5 }],
+        speed: 2.5,
+        visionRange: 175,
+        visionAngle: Math.PI / 2.5,
+      },
+      {
+        patrol: [{ col: 21, row: 7 }, { col: 1, row: 7 }],
+        speed: 2.3,
+        visionRange: 188,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 21, row: 13 }, { col: 5, row: 13 }],
+        speed: 2.7,
+        visionRange: 170,
+        visionAngle: Math.PI / 2.8,
+      },
+    ],
+  };
+
+  // ── Level 6 (25×19) — 3 keys, 3 doors ─────────────────────
+  // Player: (1,17)  Keys: (3,17),(10,17),(19,17)  Ammo: (16,17)
+  // Doors: (12,2),(8,6),(14,10)  Exit: (23,1)
+  const level6 = {
+    cols: 25,
+    rows: 19,
+    startBombs: 2,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (23,1)
+      W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,   // row 2  — door at (12,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 4
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 6  — door at (8,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 8
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,   // row 10 — door at (14,10)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 12
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 13
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 14
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 15
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 16
+      W,_,_,K,_,_,_,_,_,_,K,_,_,_,_,_,A,_,_,K,_,_,_,_,W,   // row 17 — keys (3,17)(10,17)(19,17); ammo (16,17); player (1,17)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 18
+    ],
+    playerStart: { col: 1, row: 17 },
+    enemies: [
+      {
+        patrol: [{ col: 1, row: 1 }, { col: 22, row: 1 }],
+        speed: 2.8,
+        visionRange: 200,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 3 }, { col: 11, row: 3 }, { col: 11, row: 5 }, { col: 1, row: 5 }],
+        speed: 2.6,
+        visionRange: 185,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 13, row: 3 }, { col: 23, row: 3 }, { col: 23, row: 5 }, { col: 13, row: 5 }],
+        speed: 2.7,
+        visionRange: 180,
+        visionAngle: Math.PI / 2.5,
+      },
+      {
+        patrol: [{ col: 23, row: 7 }, { col: 1, row: 7 }],
+        speed: 2.5,
+        visionRange: 190,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 11 }, { col: 1, row: 11 }],
+        speed: 2.6,
+        visionRange: 185,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 17 }, { col: 5, row: 17 }],
+        speed: 2.9,
+        visionRange: 178,
+        visionAngle: Math.PI / 2.8,
+      },
+    ],
+  };
+
+  // ── Level 7 (25×19) — 3 keys, 3 doors, checkerboard ───────
+  // Player: (1,17)  Keys: (3,17),(10,17),(19,17)  Ammo: (14,17)
+  // Doors: (8,10),(11,6),(15,2)  Exit: (23,1)
+  const level7 = {
+    cols: 25,
+    rows: 19,
+    startBombs: 1,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (23,1)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,   // row 2  — door at (15,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 4 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 6  — door at (11,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 8 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 10 — door at (8,10)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 12
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 13
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 14 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 15
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 16
+      W,_,_,K,_,_,_,_,_,_,K,_,_,_,A,_,_,_,_,K,_,_,_,_,W,   // row 17 — keys (3,17)(10,17)(19,17); ammo (14,17); player (1,17)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 18
+    ],
+    playerStart: { col: 1, row: 17 },
+    enemies: [
+      {
+        patrol: [{ col: 1, row: 1 }, { col: 22, row: 1 }],
+        speed: 3.0,
+        visionRange: 200,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 3 }, { col: 23, row: 3 }],
+        speed: 2.8,
+        visionRange: 188,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 5 }, { col: 1, row: 5 }],
+        speed: 2.9,
+        visionRange: 185,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 7 }, { col: 1, row: 7 }],
+        speed: 2.7,
+        visionRange: 192,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 9 }, { col: 23, row: 9 }],
+        speed: 2.8,
+        visionRange: 186,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 17 }, { col: 5, row: 17 }],
+        speed: 3.2,
+        visionRange: 180,
+        visionAngle: Math.PI / 2.8,
+      },
+    ],
+  };
+
+  // ── Level 8 (25×21) — 4 keys, 4 doors ─────────────────────
+  // Player: (1,19)  Keys: (3,19),(8,19),(14,19),(20,19)  Ammo: (17,19)
+  // Doors: (10,2),(7,6),(16,10),(12,14)  Exit: (23,1)
+  const level8 = {
+    cols: 25,
+    rows: 21,
+    startBombs: 1,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (23,1)
+      W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 2  — door at (10,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 4
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 6  — door at (7,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 8 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,   // row 10 — door at (16,10)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 12
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 13
+      W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,   // row 14 — door at (12,14)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 15
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 16 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 17
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 18
+      W,_,_,K,_,_,_,_,K,_,_,_,_,_,K,_,_,A,_,_,K,_,_,_,W,   // row 19 — keys (3,19)(8,19)(14,19)(20,19); ammo (17,19); player (1,19)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 20
+    ],
+    playerStart: { col: 1, row: 19 },
+    enemies: [
+      {
+        patrol: [{ col: 1, row: 1 }, { col: 22, row: 1 }],
+        speed: 3.2,
+        visionRange: 200,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 3 }, { col: 23, row: 3 }],
+        speed: 3.0,
+        visionRange: 190,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 5 }, { col: 1, row: 5 }],
+        speed: 3.1,
+        visionRange: 185,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 7 }, { col: 23, row: 7 }],
+        speed: 2.8,
+        visionRange: 192,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 9 }, { col: 1, row: 9 }],
+        speed: 3.0,
+        visionRange: 188,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 11 }, { col: 23, row: 11 }],
+        speed: 3.2,
+        visionRange: 185,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 19 }, { col: 5, row: 19 }],
+        speed: 3.5,
+        visionRange: 182,
+        visionAngle: Math.PI / 2.5,
+      },
+    ],
+  };
+
+  // ── Level 9 (25×21) — 4 keys, 4 doors, no ammo ────────────
+  // Player: (1,19)  Keys: (3,19),(8,19),(16,19),(21,19)
+  // Doors: (14,2),(9,6),(18,10),(6,14)  Exit: (23,1)
+  const level9 = {
+    cols: 25,
+    rows: 21,
+    startBombs: 1,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (23,1)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,   // row 2  — door at (14,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 4 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 6  — door at (9,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 8 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,   // row 10 — door at (18,10)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 12 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 13
+      W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 14 — door at (6,14)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 15
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,_,W,   // row 16
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 17
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 18 (checkerboard)
+      W,_,_,K,_,_,_,_,K,_,_,_,_,_,_,_,K,_,_,_,_,K,_,_,W,   // row 19 — keys (3,19)(8,19)(16,19)(21,19); player (1,19)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 20
+    ],
+    playerStart: { col: 1, row: 19 },
+    enemies: [
+      {
+        patrol: [{ col: 1, row: 1 }, { col: 22, row: 1 }],
+        speed: 3.5,
+        visionRange: 205,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 3 }, { col: 23, row: 3 }],
+        speed: 3.3,
+        visionRange: 195,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 23, row: 5 }, { col: 1, row: 5 }],
+        speed: 3.4,
+        visionRange: 190,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 1, row: 7 }, { col: 23, row: 7 }],
+        speed: 3.2,
+        visionRange: 195,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 23, row: 9 }, { col: 1, row: 9 }],
+        speed: 3.3,
+        visionRange: 192,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 1, row: 11 }, { col: 23, row: 11 }],
+        speed: 3.5,
+        visionRange: 188,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 23, row: 13 }, { col: 1, row: 13 }],
+        speed: 3.6,
+        visionRange: 185,
+        visionAngle: Math.PI / 2.5,
+      },
+      {
+        patrol: [{ col: 23, row: 19 }, { col: 5, row: 19 }],
+        speed: 3.8,
+        visionRange: 182,
+        visionAngle: Math.PI / 2.5,
+      },
+    ],
+  };
+
+  // ── Level 10 (27×23) — 4 keys, 4 doors, max difficulty ────
+  // Player: (1,21)  Keys: (3,21),(9,21),(16,21),(22,21)
+  // Doors: (13,2),(8,6),(18,10),(11,14)  Exit: (25,1)
+  const level10 = {
+    cols: 27,
+    rows: 23,
+    startBombs: 1,
+    map: [
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 0
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,E,W,   // row 1  — exit at (25,1)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 2  — door at (13,2)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 3
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 4 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 5
+      W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 6  — door at (8,6)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 7
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 8 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 9
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,   // row 10 — door at (18,10)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 11
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 12 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 13
+      W,W,W,W,W,W,W,W,W,W,W,D,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 14 — door at (11,14)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 15
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 16
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 17
+      W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,_,W,   // row 18 (checkerboard)
+      W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,W,   // row 19
+      W,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,W,_,_,W,   // row 20
+      W,_,_,K,_,_,_,_,_,K,_,_,_,_,_,_,K,_,_,_,_,_,K,_,_,_,W,   // row 21 — keys (3,21)(9,21)(16,21)(22,21); player (1,21)
+      W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,   // row 22
+    ],
+    playerStart: { col: 1, row: 21 },
+    enemies: [
+      {
+        patrol: [{ col: 1, row: 1 }, { col: 24, row: 1 }],
+        speed: 3.8,
+        visionRange: 210,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 1, row: 3 }, { col: 25, row: 3 }],
+        speed: 3.6,
+        visionRange: 200,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 25, row: 5 }, { col: 1, row: 5 }],
+        speed: 3.7,
+        visionRange: 195,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 1, row: 7 }, { col: 25, row: 7 }],
+        speed: 3.5,
+        visionRange: 200,
+        visionAngle: Math.PI / 3,
+      },
+      {
+        patrol: [{ col: 25, row: 9 }, { col: 1, row: 9 }],
+        speed: 3.6,
+        visionRange: 195,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 1, row: 11 }, { col: 25, row: 11 }],
+        speed: 3.8,
+        visionRange: 192,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 25, row: 13 }, { col: 1, row: 13 }],
+        speed: 3.9,
+        visionRange: 190,
+        visionAngle: Math.PI / 2.5,
+      },
+      {
+        patrol: [{ col: 1, row: 17 }, { col: 25, row: 17 }],
+        speed: 3.7,
+        visionRange: 188,
+        visionAngle: Math.PI / 2.8,
+      },
+      {
+        patrol: [{ col: 25, row: 21 }, { col: 5, row: 21 }],
+        speed: 4.0,
+        visionRange: 185,
+        visionAngle: Math.PI / 2.5,
+      },
+    ],
+  };
+
+  const _levels = [level1, level2, level3, level4, level5, level6, level7, level8, level9, level10];
 
   function get(index) {
     return _levels[index] || null;

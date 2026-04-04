@@ -27,6 +27,13 @@ const Player = (() => {
   // Keys held
   let _keys = 0;
 
+  // Bomb ammo
+  const MAX_BOMB_AMMO = 5;
+  let _bombAmmo = 0;
+
+  // Particles for ammo pickup burst
+  let _ammoParticles = [];
+
   // Visual
   let _facing = 0; // angle in radians (facing direction)
   let _bobTimer = 0;
@@ -37,7 +44,7 @@ const Player = (() => {
   // Particles for key pickup burst
   let _keyParticles = [];
 
-  function init(col, row) {
+  function init(col, row, startBombs) {
     _col = col;
     _row = row;
     _px = col * TS + TS / 2;
@@ -47,17 +54,29 @@ const Player = (() => {
     _moving = false;
     _moveTimer = 0;
     _keys = 0;
+    _bombAmmo = Utils.clamp(startBombs || 0, 0, MAX_BOMB_AMMO);
     _facing = 0;
     _bobTimer = 0;
     _stepParticles = [];
     _keyParticles = [];
+    _ammoParticles = [];
   }
 
-  function getKeys() { return _keys; }
-  function getCol()  { return _col; }
-  function getRow()  { return _row; }
-  function getPx()   { return _px; }
-  function getPy()   { return _py; }
+  function getKeys()     { return _keys; }
+  function getCol()      { return _col; }
+  function getRow()      { return _row; }
+  function getPx()       { return _px; }
+  function getPy()       { return _py; }
+  function getBombAmmo() { return _bombAmmo; }
+
+  function addBombAmmo(n) {
+    _bombAmmo = Utils.clamp(_bombAmmo + n, 0, MAX_BOMB_AMMO);
+  }
+
+  function useBomb() {
+    if (_bombAmmo > 0) { _bombAmmo--; return true; }
+    return false;
+  }
 
   function tryMove(dx, dy, onCollect, onOpenDoor, onExit) {
     if (_moving) return; // still moving
@@ -124,7 +143,25 @@ const Player = (() => {
     }
   }
 
-  function update(dt, onCollect, onExit) {
+  function _spawnAmmoParticles(px, py) {
+    const colors = ['#00ff88', '#ffffff', '#44ffaa', '#00cc66', '#ccffee'];
+    for (let i = 0; i < 20; i++) {
+      const angle = (i / 20) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+      const speed = 45 + Math.random() * 85;
+      const life  = 0.4 + Math.random() * 0.3;
+      _ammoParticles.push({
+        x: px, y: py,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life,
+        maxLife: life,
+        size: 2.5 + Math.random() * 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      });
+    }
+  }
+
+  function update(dt, onCollect, onExit, onAmmoCollect) {
     _bobTimer += dt;
 
     // Update step particles
@@ -151,6 +188,18 @@ const Player = (() => {
       if (p.life <= 0) _keyParticles.splice(i, 1);
     }
 
+    // Update ammo pickup particles
+    for (let i = _ammoParticles.length - 1; i >= 0; i--) {
+      const p = _ammoParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      const damp = Math.pow(0.88, dt * 60);
+      p.vx *= damp;
+      p.vy *= damp;
+      if (p.life <= 0) _ammoParticles.splice(i, 1);
+    }
+
     if (_moving) {
       _moveTimer += dt;
       const t = Utils.clamp(_moveTimer / MOVE_DURATION, 0, 1);
@@ -170,6 +219,12 @@ const Player = (() => {
           Tilemap.removeKey(_col, _row);
           _spawnKeyParticles(_tx, _ty);
           if (onCollect) onCollect(_col, _row);
+        }
+        if (Tilemap.isAmmo(_col, _row)) {
+          addBombAmmo(2);
+          Tilemap.removeAmmo(_col, _row);
+          _spawnAmmoParticles(_tx, _ty);
+          if (onAmmoCollect) onAmmoCollect();
         }
         if (Tilemap.isExit(_col, _row)) {
           if (onExit) onExit();
@@ -196,6 +251,24 @@ const Player = (() => {
         ctx.globalAlpha = alpha;
         ctx.shadowBlur = 8;
         ctx.shadowColor = '#ffee00';
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.4 + alpha * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Ammo pickup burst particles
+    if (_ammoParticles.length > 0) {
+      ctx.save();
+      for (const p of _ammoParticles) {
+        const alpha = p.life / p.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.shadowBlur = 7;
+        ctx.shadowColor = '#00ff88';
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * (0.4 + alpha * 0.6), 0, Math.PI * 2);
@@ -257,6 +330,7 @@ const Player = (() => {
   return {
     init, update, draw,
     tryMove, isMoving,
-    getKeys, getCol, getRow, getPx, getPy
+    getKeys, getCol, getRow, getPx, getPy,
+    getBombAmmo, addBombAmmo, useBomb
   };
 })();
