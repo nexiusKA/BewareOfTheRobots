@@ -52,8 +52,10 @@ const UI = (() => {
 
       '<div class="start-section">' +
         '<div class="start-section-header">⚡ KEY MECHANICS</div>' +
-        '<div class="start-feat-row">⏱️ Time <b>slows</b> when you near an enemy's vision cone — use it to plan</div>' +
-        '<div class="start-feat-row">⚠️ A detection meter fills above enemies — escape the cone before it maxes out</div>' +
+        '<div class="start-feat-row">⏱️ Time <b>slows</b> when you near an enemy\'s vision cone — use it to plan</div>' +
+        '<div class="start-feat-row">⚠️ Detection meter fills above enemies — escape the cone before it maxes out</div>' +
+        '<div class="start-feat-row">🔍 Fully detected? Enemy <b>chases</b> you — hide before it catches up</div>' +
+        '<div class="start-feat-row">❓ If you escape, the enemy <b>searches</b> your last known position then returns to patrol</div>' +
         '<div class="start-feat-row">🛡️ A <b>1.5s grace period</b> protects you at the start of every sector</div>' +
         '<div class="start-feat-row">🌫️ <b>Fog of War</b> <small>[F]</small> &nbsp;•&nbsp; 👻 <b>Ghost Mode</b> <small>[G]</small> &nbsp;•&nbsp; 📋 <b>Full info</b> <small>[I]</small></div>' +
       '</div>' +
@@ -106,10 +108,11 @@ const UI = (() => {
   function showGameOver(onRestart) {
     _clearTheme();
     _applyClass('overlay-fail');
-    overlayTitle.textContent = 'DETECTED';
+    overlayTitle.textContent = 'CAUGHT';
     overlayMsg.innerHTML =
-      'The patrol unit has spotted you.<br>' +
-      'Returning to last checkpoint...<br><br>' +
+      'A patrol unit closed in and caught you.<br>' +
+      'Next time: break line of sight before the detection meter fills,<br>' +
+      'or hide until the enemy gives up the search.<br><br>' +
       '<small>Press R or click below to retry instantly</small>';
     overlayBtn.textContent = 'RETRY';
     overlayBtn.onclick = onRestart;
