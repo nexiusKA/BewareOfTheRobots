@@ -368,6 +368,9 @@ body {
   #dpad { display: grid; }
 }
 
+/* Force-show d-pad when manually activated via menu toggle */
+#dpad.dpad-active { display: grid; }
+
 #dpad-up    { grid-area: up; }
 #dpad-left  { grid-area: left; }
 #dpad-right { grid-area: right; }
@@ -408,4 +411,33 @@ body {
 .dpad-bomb-btn.dpad-pressed {
   background: rgba(255, 153, 0, 0.32);
   box-shadow: 0 0 14px rgba(255, 153, 0, 0.65);
+}
+
+/* ── Mobile toggle button (shown in all menu overlays) ──── */
+.mobile-toggle-btn {
+  display: block;
+  margin: 10px auto 0;
+  padding: 7px 18px;
+  background: rgba(0, 255, 204, 0.06);
+  border: 1px solid rgba(0, 255, 204, 0.30);
+  border-radius: 6px;
+  color: rgba(0, 255, 204, 0.65);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.78rem;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.mobile-toggle-btn:hover {
+  background: rgba(0, 255, 204, 0.14);
+  color: #00ffcc;
+  border-color: rgba(0, 255, 204, 0.55);
+}
+
+.mobile-toggle-btn.mobile-toggle-active {
+  background: rgba(0, 255, 204, 0.18);
+  color: #00ffcc;
+  border-color: rgba(0, 255, 204, 0.70);
+  box-shadow: 0 0 8px rgba(0, 255, 204, 0.30);
 }
