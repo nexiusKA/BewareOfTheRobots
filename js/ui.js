@@ -127,6 +127,9 @@ const UI = (() => {
   let _hudLevel = 1;
   let _hudTotalLevels = 1;
   let _hudBombs = 0;
+  let _fogEnabled = false;
+
+  function setFogMode(enabled) { _fogEnabled = enabled; }
 
   function setHUD(level, totalLevels, keys, bombs) {
     _hudLevel = level;
@@ -213,7 +216,8 @@ const UI = (() => {
     ctx.shadowBlur  = 0;
     ctx.textAlign   = 'right';
     ctx.font        = '11px Courier New';
-    ctx.fillText('[R] RESTART  [I] INFO', canvasW - pad, y0 + barH / 2);
+    const fogHint   = _fogEnabled ? '  [F] FOG ON' : '';
+    ctx.fillText(`[R] RESTART  [I] INFO${fogHint}`, canvasW - pad, y0 + barH / 2);
 
     ctx.shadowBlur   = 0;
     ctx.textBaseline = 'alphabetic';
@@ -278,6 +282,13 @@ const UI = (() => {
         const ty   = mmY + r * tH;
         const tw   = Math.max(1, tW);
         const th   = Math.max(1, tH);
+
+        // In fog mode, unexplored tiles appear as solid black on the minimap
+        if (!FogManager.isExplored(c, r)) {
+          ctx.fillStyle = 'rgba(0,0,0,0.95)';
+          ctx.fillRect(tx, ty, tw, th);
+          continue;
+        }
 
         if (tile === T.WALL) {
           ctx.fillStyle = wc;
@@ -378,6 +389,7 @@ const UI = (() => {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
     showInfo, hideInfo, isInfoVisible,
     setTheme, setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
+    setFogMode,
     update, drawHUD, drawScanlines, drawVignette, drawDangerWarning,
     drawMinimap, updateMinimap
   };

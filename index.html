@@ -38,6 +38,7 @@
       <button class="dpad-btn" id="dpad-left"  aria-label="Move left">◀</button>
       <button class="dpad-btn" id="dpad-right" aria-label="Move right">▶</button>
       <button class="dpad-btn" id="dpad-down"  aria-label="Move down">▼</button>
+      <button class="dpad-btn dpad-bomb-btn" id="dpad-bomb" aria-label="Place bomb">💣</button>
     </div>
     <div id="info-overlay" class="hidden">
       <div id="info-content">
@@ -48,6 +49,7 @@
           <table class="info-table">
             <tr><td>[WASD / ↑↓←→]</td><td>Move one tile</td></tr>
             <tr><td>[SPACE]</td><td>Place bomb at current position</td></tr>
+            <tr><td>[F]</td><td>Toggle fog-of-war mode</td></tr>
             <tr><td>[R]</td><td>Restart the current level</td></tr>
             <tr><td>[I] / [ESC]</td><td>Toggle this info screen</td></tr>
             <tr><td>[#]</td><td>Debug mode — disables detection &amp; opens settings panel</td></tr>
@@ -116,6 +118,7 @@
   <script src="js/input.js"></script>
   <script src="js/themes.js"></script>
   <script src="js/tilemap.js"></script>
+  <script src="js/fog.js"></script>
   <script src="js/mapgen.js"></script>
   <script src="js/level.js"></script>
   <script src="js/player.js"></script>

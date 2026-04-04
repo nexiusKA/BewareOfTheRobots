@@ -116,6 +116,7 @@ const Game = (() => {
 
     // Init subsystems
     Tilemap.init(generated.cols, generated.rows, _randomizeKeyPositions(generated));
+    FogManager.init(generated.cols, generated.rows, generated.playerStart.col, generated.playerStart.row);
     Player.init(generated.playerStart.col, generated.playerStart.row, config.startBombs || 0);
     EnemyManager.init(generated.enemies);
     BombManager.init();
@@ -224,6 +225,12 @@ const Game = (() => {
       }
     }
 
+    // Toggle fog-of-war mode (F key) — works from any game state
+    if (Input.isPressed('KeyF')) {
+      FogManager.toggle();
+      UI.setFogMode(FogManager.isEnabled());
+    }
+
     // Info overlay toggle — works from any game state
     if (Input.isPressed('KeyI')) {
       if (UI.isInfoVisible()) UI.hideInfo();
@@ -300,6 +307,9 @@ const Game = (() => {
 
     Player.update(dt, _onKeyCollect, _onExit, _onAmmoCollect);
 
+    // Expand fog exploration to current player position
+    FogManager.reveal(Player.getCol(), Player.getRow());
+
     // Bombs
     BombManager.update(dt);
 
@@ -372,6 +382,7 @@ const Game = (() => {
     ctx.clip();
     ctx.translate(-_camX + _shakeX, _HUD_HEIGHT - _camY + _shakeY);
     Tilemap.draw(ctx);
+    FogManager.draw(ctx);
     BombManager.draw(ctx);
     EnemyManager.draw(ctx);
     Player.draw(ctx);
