@@ -264,10 +264,10 @@ const MapGen = (() => {
     // Alternate left→right / right→left patrols.
     const allEnemySlots = [];
     for (let i = 0; i < enemyCount; i++) {
-      allEnemySlots.push({ type: 'patrol', idx: i });
+      allEnemySlots.push({ type: 'guard_bot', idx: i });
     }
     for (let i = 0; i < scannerCount; i++) {
-      allEnemySlots.push({ type: 'scanner', idx: i });
+      allEnemySlots.push({ type: 'scanner_bot', idx: i });
     }
 
     // Distribute enemy slots across corridors (main first, then upper)
@@ -282,15 +282,15 @@ const MapGen = (() => {
       const colA  = ltr ? 1          : cols - 2;
       const colB  = ltr ? cols - 2   : 1;
 
-      const baseSpeed  = 1.60 + 0.08 * slotIdx;
-      const isScanner  = slot.type === 'scanner';
+      const baseSpeed    = 1.60 + 0.08 * slotIdx;
+      const isScannerBot = slot.type === 'scanner_bot';
 
       enemies.push({
         type:        slot.type,
         patrol:      [{ col: colA, row }, { col: colB, row }],
-        speed:       baseSpeed + (isScanner ? 0.15 : 0),
-        visionRange: 185 + (slotIdx % 4) * 5,
-        visionAngle: isScanner ? Math.PI / 2 : Math.PI / 3,
+        speed:       baseSpeed + (isScannerBot ? -0.35 : 0),  // ScannerBot is slower
+        visionRange: isScannerBot ? 260 + (slotIdx % 4) * 10 : 185 + (slotIdx % 4) * 5,
+        visionAngle: isScannerBot ? Math.PI / 2 : Math.PI / 3,
       });
     });
 
