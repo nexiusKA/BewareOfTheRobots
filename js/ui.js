@@ -3,23 +3,42 @@
 
 const UI = (() => {
 
-  const overlay   = document.getElementById('overlay');
+  const overlay        = document.getElementById('overlay');
   const overlayTitle   = document.getElementById('overlay-title');
   const overlayMsg     = document.getElementById('overlay-message');
   const overlayBtn     = document.getElementById('overlay-btn');
   const overlayContent = document.getElementById('overlay-content');
   const infoOverlay    = document.getElementById('info-overlay');
 
+  // Active theme — updated by setTheme() each level load
+  let _theme = null;
+  function setTheme(theme) { _theme = theme; }
+
   // ── Overlay helpers ──────────────────────────────────────
+  const _ALL_OVERLAY_CLASSES = [
+    'overlay-start', 'overlay-win', 'overlay-fail', 'overlay-gameover',
+    'overlay-theme-0', 'overlay-theme-1', 'overlay-theme-2',
+    'overlay-theme-3', 'overlay-theme-4',
+  ];
+
   function _clearTheme() {
-    overlay.classList.remove('overlay-start','overlay-win','overlay-fail','overlay-gameover');
-    overlayContent.classList.remove('overlay-start','overlay-win','overlay-fail','overlay-gameover');
+    overlay.classList.remove(..._ALL_OVERLAY_CLASSES);
+    overlayContent.classList.remove(..._ALL_OVERLAY_CLASSES);
+  }
+
+  // Apply an overlay colour class, plus the active level theme class
+  function _applyClass(cls) {
+    overlay.classList.add(cls);
+    overlayContent.classList.add(cls);
+    if (_theme) {
+      overlay.classList.add(_theme.overlayClass);
+      overlayContent.classList.add(_theme.overlayClass);
+    }
   }
 
   function showStart(levelCount, onStart) {
     _clearTheme();
-    overlay.classList.add('overlay-start');
-    overlayContent.classList.add('overlay-start');
+    _applyClass('overlay-start');
     overlayTitle.textContent = 'BEWARE OF THE ROBOTS';
     overlayMsg.innerHTML =
       'A stealth puzzle game.<br>' +
@@ -35,22 +54,29 @@ const UI = (() => {
 
   function showLevelComplete(levelNum, totalLevels, onNext) {
     _clearTheme();
-    overlay.classList.add('overlay-win');
-    overlayContent.classList.add('overlay-win');
-    overlayTitle.textContent = 'LEVEL CLEAR';
-    const isLast = levelNum >= totalLevels;
-    overlayMsg.innerHTML =
-      `Sector ${levelNum} secured.<br>` +
-      (isLast ? 'All sectors cleared — mission complete!' : `Proceeding to sector ${levelNum + 1}...`);
-    overlayBtn.textContent = isLast ? 'PLAY AGAIN' : 'NEXT LEVEL';
+    _applyClass('overlay-win');
+    overlayTitle.textContent = 'SECTOR CLEARED';
+    const isLast       = levelNum >= totalLevels;
+    const nextTheme    = isLast ? null : Themes.get(levelNum);   // levelNum is 1-indexed, Themes.get is 0-indexed
+    const themeChanged = nextTheme && nextTheme.id !== (_theme ? _theme.id : -1);
+    let msg = `Sector ${levelNum} secured.<br>`;
+    if (isLast) {
+      msg += 'All sectors cleared — mission complete!';
+    } else if (themeChanged) {
+      msg += `<em style="opacity:0.7;font-size:0.85em">ENTERING: ${nextTheme.name}</em><br>` +
+             `<small>${nextTheme.flavorText}</small>`;
+    } else {
+      msg += `Proceeding to sector ${levelNum + 1}...`;
+    }
+    overlayMsg.innerHTML = msg;
+    overlayBtn.textContent = isLast ? 'PLAY AGAIN' : 'NEXT SECTOR';
     overlayBtn.onclick = onNext;
     overlay.classList.remove('hidden');
   }
 
   function showGameOver(onRestart) {
     _clearTheme();
-    overlay.classList.add('overlay-fail');
-    overlayContent.classList.add('overlay-fail');
+    _applyClass('overlay-fail');
     overlayTitle.textContent = 'DETECTED';
     overlayMsg.innerHTML =
       'The patrol unit has spotted you.<br>' +
@@ -63,8 +89,7 @@ const UI = (() => {
 
   function showVictory(onRestart) {
     _clearTheme();
-    overlay.classList.add('overlay-gameover');
-    overlayContent.classList.add('overlay-gameover');
+    _applyClass('overlay-gameover');
     overlayTitle.textContent = 'MISSION COMPLETE';
     overlayMsg.innerHTML =
       'All sectors have been cleared.<br>' +
@@ -129,56 +154,70 @@ const UI = (() => {
   }
 
   function drawHUD(ctx, canvasW, canvasH) {
-    const pad = 12;
+    const pad  = 12;
     const barH = 38;
-    const y0 = 0;
+    const y0   = 0;
+
+    // Theme accent colour (falls back to default cyan)
+    const accent = _theme ? _theme.hudColor : '#00ffcc';
+    const border = _theme ? _theme.hudBorder : 'rgba(0,255,204,0.2)';
 
     // HUD background bar
-    ctx.fillStyle = 'rgba(5,5,20,0.82)';
+    ctx.fillStyle   = 'rgba(5,5,20,0.82)';
     ctx.fillRect(0, y0, canvasW, barH);
-    ctx.strokeStyle = 'rgba(0,255,204,0.2)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = border;
+    ctx.lineWidth   = 1;
     ctx.strokeRect(0, y0, canvasW, barH);
 
-    ctx.font = 'bold 13px Courier New'; // 13px to fit sector, key, and bomb counters in the HUD bar
-    ctx.textBaseline = 'middle';
+    ctx.font          = 'bold 13px Courier New';
+    ctx.textBaseline  = 'middle';
 
-    // Level
-    ctx.fillStyle = '#00ffcc';
-    ctx.textAlign = 'left';
-    ctx.shadowBlur = 6;
-    ctx.shadowColor = '#00ffcc';
+    // Level / sector
+    ctx.fillStyle   = accent;
+    ctx.textAlign   = 'left';
+    ctx.shadowBlur  = 6;
+    ctx.shadowColor = accent;
     ctx.fillText(`SECTOR ${_hudLevel} / ${_hudTotalLevels}`, pad, y0 + barH / 2);
+
+    // Theme name (small, dimmed)
+    if (_theme) {
+      ctx.font      = '10px Courier New';
+      ctx.fillStyle = `${accent}88`;
+      ctx.shadowBlur = 0;
+      ctx.fillText(_theme.name, pad, y0 + barH / 2 + 11);
+      ctx.font      = 'bold 13px Courier New';
+    }
 
     // Keys — flash yellow on collect
     const keyColor = _hudFlash > 0
       ? `rgba(255,238,0,${0.6 + (_hudFlash / 0.5) * 0.4})`
       : '#ffee00';
-    ctx.fillStyle = keyColor;
+    ctx.fillStyle   = keyColor;
     ctx.shadowColor = keyColor;
-    ctx.textAlign = 'center';
-    const centerX = canvasW / 2;
+    ctx.shadowBlur  = 6;
+    ctx.textAlign   = 'center';
+    const centerX   = canvasW / 2;
     ctx.fillText(`KEY ${_hudKeyCount > 0 ? '⬡'.repeat(_hudKeyCount) : '—'}`, centerX - 50, y0 + barH / 2);
 
     // Bombs — flash green on collect
     const bombColor = _hudAmmoFlash > 0
       ? `rgba(0,255,136,${0.6 + (_hudAmmoFlash / 0.5) * 0.4})`
       : (_hudBombs === 0 ? 'rgba(150,150,150,0.5)' : '#00ff88');
-    ctx.fillStyle = bombColor;
+    ctx.fillStyle   = bombColor;
     ctx.shadowColor = bombColor;
-    const bombDots = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
+    const bombDots  = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
     ctx.fillText(`💣 ${bombDots}`, centerX + 60, y0 + barH / 2);
 
-    // Hints — right-aligned: restart + info toggle
-    ctx.fillStyle = 'rgba(0,255,204,0.45)';
-    ctx.shadowBlur = 0;
-    ctx.textAlign = 'right';
-    ctx.font = '11px Courier New';
+    // Hints — right-aligned
+    ctx.fillStyle   = `${accent}72`;
+    ctx.shadowBlur  = 0;
+    ctx.textAlign   = 'right';
+    ctx.font        = '11px Courier New';
     ctx.fillText('[R] RESTART  [I] INFO', canvasW - pad, y0 + barH / 2);
 
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur   = 0;
     ctx.textBaseline = 'alphabetic';
-    ctx.textAlign = 'left';
+    ctx.textAlign    = 'left';
   }
 
   // ── Mini-map ─────────────────────────────────────────────
@@ -203,61 +242,67 @@ const UI = (() => {
       mmW = Math.round(MINIMAP_MAX * cols / rows);
     }
 
-    const tW = mmW / cols; // tile width in minimap pixels
-    const tH = mmH / rows; // tile height in minimap pixels
+    const tW  = mmW / cols;
+    const tH  = mmH / rows;
     const mmX = canvasW - mmW - MINIMAP_PAD;
     const mmY = canvasH - mmH - MINIMAP_PAD;
+
+    // Theme accent for minimap border/label
+    const accent = _theme ? _theme.accentColor : '#00ffcc';
 
     ctx.save();
 
     // Background panel
-    ctx.fillStyle = 'rgba(5,5,20,0.78)';
-    ctx.strokeStyle = 'rgba(0,255,204,0.35)';
-    ctx.lineWidth = 1;
+    ctx.fillStyle   = 'rgba(5,5,20,0.78)';
+    ctx.strokeStyle = `${accent}59`;
+    ctx.lineWidth   = 1;
     ctx.fillRect(mmX - 3, mmY - 3, mmW + 6, mmH + 6);
     ctx.strokeRect(mmX - 3, mmY - 3, mmW + 6, mmH + 6);
 
     // Label
-    ctx.font = '8px Courier New';
-    ctx.fillStyle = 'rgba(0,255,204,0.55)';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
+    ctx.font          = '8px Courier New';
+    ctx.fillStyle     = `${accent}8c`;
+    ctx.textAlign     = 'left';
+    ctx.textBaseline  = 'alphabetic';
     ctx.fillText('MAP', mmX - 2, mmY - 5);
 
-    // Draw tiles
-    const T = Tilemap.TILE;
+    // Draw tiles — use theme floor/wall colours when available
+    const T  = Tilemap.TILE;
+    const fc = _theme ? _theme.floorColor : '#141428';
+    const wc = _theme ? _theme.wallColor  : '#1a1a3a';
+    // Brightened versions for the minimap
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const tile = Tilemap.get(c, r);
-        const tx = mmX + c * tW;
-        const ty = mmY + r * tH;
-        const tw = Math.max(1, tW);
-        const th = Math.max(1, tH);
+        const tx   = mmX + c * tW;
+        const ty   = mmY + r * tH;
+        const tw   = Math.max(1, tW);
+        const th   = Math.max(1, tH);
 
         if (tile === T.WALL) {
-          ctx.fillStyle = '#2a2a55';
+          ctx.fillStyle = wc;
         } else if (tile === T.FLOOR || tile === T.DOOR_OPEN) {
-          ctx.fillStyle = '#141428';
+          ctx.fillStyle = fc;
         } else if (tile === T.DOOR) {
           ctx.fillStyle = '#ff8800';
         } else if (tile === T.KEY) {
-          ctx.fillStyle = debugMode ? '#ffee00' : '#141428';
+          ctx.fillStyle = debugMode ? '#ffee00' : fc;
         } else if (tile === T.EXIT) {
-          ctx.fillStyle = '#00ffcc';
+          ctx.fillStyle = accent;
         } else if (tile === T.AMMO) {
-          ctx.fillStyle = debugMode ? '#00ff88' : '#141428';
+          ctx.fillStyle = debugMode ? '#00ff88' : fc;
         } else {
-          ctx.fillStyle = '#141428';
+          ctx.fillStyle = fc;
         }
         ctx.fillRect(tx, ty, tw, th);
       }
     }
 
     // Player dot — pulsing white circle
-    const dotR    = Math.max(2, Math.min(tW, tH) * 1.8);
-    const pulse   = (Math.sin(_minimapPulse * 5) + 1) / 2; // 0-1
-    const dotX    = mmX + (playerCol + 0.5) * tW;
-    const dotY    = mmY + (playerRow + 0.5) * tH;
+    const dotR  = Math.max(2, Math.min(tW, tH) * 1.8);
+    const pulse = (Math.sin(_minimapPulse * 5) + 1) / 2;
+    const dotX  = mmX + (playerCol + 0.5) * tW;
+    const dotY  = mmY + (playerRow + 0.5) * tH;
 
     ctx.shadowBlur  = 4 + pulse * 4;
     ctx.shadowColor = '#ffffff';
@@ -332,7 +377,7 @@ const UI = (() => {
   return {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
     showInfo, hideInfo, isInfoVisible,
-    setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
+    setTheme, setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
     update, drawHUD, drawScanlines, drawVignette, drawDangerWarning,
     drawMinimap, updateMinimap
   };
