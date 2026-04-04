@@ -18,8 +18,8 @@ const EnemyManager = (() => {
 
   // Last known player position (updated each frame) used for proximity-based
   // fog visibility so enemies near the player are revealed slightly early.
-  let _playerPx = -1;
-  let _playerPy = -1;
+  let _lastPlayerPx = -1;
+  let _lastPlayerPy = -1;
   // Tiles of extra look-ahead beyond the fog reveal radius
   const FOG_PEEK_RADIUS = 2;
 
@@ -88,8 +88,8 @@ const EnemyManager = (() => {
 
   function update(dt, playerPx, playerPy) {
     _detected = false;
-    _playerPx = playerPx;
-    _playerPy = playerPy;
+    _lastPlayerPx = playerPx;
+    _lastPlayerPy = playerPy;
     if (_alertFlash > 0) _alertFlash -= dt;
 
     for (const e of _enemies) {
@@ -195,11 +195,11 @@ const EnemyManager = (() => {
     if (FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS))) return true;
     // Also reveal enemies that are close to the player even if their tile hasn't
     // been explored yet — gives the player slightly more reaction time in fog mode.
-    if (FogManager.isEnabled() && _playerPx >= 0) {
-      const peekPx = FOG_PEEK_RADIUS * TS;
-      const dx = e.px - _playerPx;
-      const dy = e.py - _playerPy;
-      if (dx * dx + dy * dy <= peekPx * peekPx) return true;
+    if (FogManager.isEnabled() && _lastPlayerPx >= 0) {
+      const peekRadiusPx = FOG_PEEK_RADIUS * TS;
+      const dx = e.px - _lastPlayerPx;
+      const dy = e.py - _lastPlayerPy;
+      if (dx * dx + dy * dy <= peekRadiusPx * peekRadiusPx) return true;
     }
     return false;
   }
