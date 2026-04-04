@@ -278,7 +278,6 @@ const Player = (() => {
           _hasDemolition = true;
           Tilemap.removeDemolitionPerk(_col, _row);
           _spawnDemolitionParticles(_tx, _ty);
-          if (onAmmoCollect) onAmmoCollect(); // reuse HUD-refresh callback
         }
         if (Tilemap.isExit(_col, _row)) {
           if (onExit) onExit();
