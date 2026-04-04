@@ -58,8 +58,24 @@ const Game = (() => {
     _canvas = canvas;
     _ctx    = canvas.getContext('2d');
     Input.init();
+
+    // Debug panel: apply button + prevent game keys from firing while typing
+    const _applyBtn  = document.getElementById('debug-apply-btn');
+    const _dtInput   = document.getElementById('debug-detect-time');
+    const _csInput   = document.getElementById('debug-cone-scale');
+    if (_applyBtn) _applyBtn.addEventListener('click', _applyDebugSettings);
+    if (_dtInput)  _dtInput.addEventListener('keydown',  e => { e.stopPropagation(); if (e.key === 'Enter') _applyDebugSettings(); });
+    if (_csInput)  _csInput.addEventListener('keydown',  e => { e.stopPropagation(); if (e.key === 'Enter') _applyDebugSettings(); });
+
     _loadLevel(_currentLevel);
     UI.showStart(Levels.count(), _onStart);
+  }
+
+  function _applyDebugSettings() {
+    const dtVal = parseFloat(document.getElementById('debug-detect-time').value);
+    const csVal = parseFloat(document.getElementById('debug-cone-scale').value) / 100;
+    if (!isNaN(dtVal) && dtVal > 0) EnemyManager.setDetectTime(dtVal);
+    if (!isNaN(csVal) && csVal > 0) EnemyManager.setConeScale(csVal);
   }
 
   function _onStart() {
@@ -82,7 +98,7 @@ const Game = (() => {
     _camY = _HUD_HEIGHT;
 
     // Init subsystems
-    Tilemap.init(def.cols, def.rows, def.map);
+    Tilemap.init(def.cols, def.rows, _randomizeKeyPositions(def));
     Player.init(def.playerStart.col, def.playerStart.row, def.startBombs || 0);
     EnemyManager.init(def.enemies);
     BombManager.init();
@@ -175,6 +191,16 @@ const Game = (() => {
     // Toggle debug mode
     if (Input.isPressedKey('#')) {
       _debugMode = !_debugMode;
+      const panel = document.getElementById('debug-panel');
+      if (panel) {
+        if (_debugMode) {
+          document.getElementById('debug-detect-time').value = EnemyManager.getDetectTime().toFixed(2);
+          document.getElementById('debug-cone-scale').value  = Math.round(EnemyManager.getConeScale() * 100);
+          panel.classList.remove('hidden');
+        } else {
+          panel.classList.add('hidden');
+        }
+      }
     }
 
     // Info overlay toggle — works from any game state
@@ -330,6 +356,96 @@ const Game = (() => {
       ctx.shadowBlur = 0;
       ctx.restore();
     }
+  }
+
+  // ── Key randomisation ────────────────────────────────────
+  // Returns a copy of def.map with key tiles shuffled to random floor positions
+  // inside the zone the player can access without collecting any keys (below all
+  // door rows). A BFS from the player start ensures every candidate is reachable.
+  // If fewer candidates than keys exist the original layout is used as fallback.
+  function _randomizeKeyPositions(def) {
+    const { cols, rows, playerStart, map } = def;
+    const T  = Tilemap.TILE;
+    const grid = map.slice();
+
+    // Locate the highest-indexed door row (= last barrier above the player zone)
+    let lastDoorRow = 0;
+    outer: for (let r = rows - 1; r >= 0; r--) {
+      for (let c = 0; c < cols; c++) {
+        if (grid[r * cols + c] === T.DOOR) { lastDoorRow = r; break outer; }
+      }
+    }
+
+    // Count keys and clear them so the BFS sees plain floor
+    let keyCount = 0;
+    for (let i = 0; i < grid.length; i++) {
+      if (grid[i] === T.KEY) { keyCount++; grid[i] = T.FLOOR; }
+    }
+
+    // BFS from player start — doors are impassable (player has no key yet)
+    const startIdx = playerStart.row * cols + playerStart.col;
+    const reachable = new Set([startIdx]);
+    const queue = [startIdx];
+    const passable = new Set([T.FLOOR, T.DOOR_OPEN, T.EXIT, T.AMMO]);
+    while (queue.length > 0) {
+      const idx = queue.shift();
+      const c   = idx % cols;
+      const r   = Math.floor(idx / cols);
+      for (const [dc, dr] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nc = c + dc, nr = r + dr;
+        if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
+        const ni = nr * cols + nc;
+        if (reachable.has(ni)) continue;
+        if (passable.has(grid[ni])) { reachable.add(ni); queue.push(ni); }
+      }
+    }
+
+    // Collect candidate positions: reachable floor in the accessible zone,
+    // not the player tile, not adjacent to it, and not an ammo pickup tile.
+    const candidates = [];
+    for (let r = lastDoorRow + 1; r < rows - 1; r++) {
+      for (let c = 1; c < cols - 1; c++) {
+        const idx = r * cols + c;
+        if (!reachable.has(idx)) continue;
+        if (grid[idx] !== T.FLOOR) continue;
+        if (idx === startIdx) continue;
+        const mhDist = Math.abs(r - playerStart.row) + Math.abs(c - playerStart.col);
+        if (mhDist < 2) continue;
+        candidates.push(idx);
+      }
+    }
+
+    if (candidates.length < keyCount) {
+      // Not enough space — restore original layout
+      return map.slice();
+    }
+
+    // Fisher-Yates shuffle
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+
+    // Place keys, enforcing a minimum Manhattan spread of 4 tiles between them
+    const placed = [];
+    for (const idx of candidates) {
+      if (placed.length >= keyCount) break;
+      const c = idx % cols;
+      const r = Math.floor(idx / cols);
+      const tooClose = placed.some(pi => {
+        const pc = pi % cols, pr = Math.floor(pi / cols);
+        return Math.abs(c - pc) + Math.abs(r - pr) < 4;
+      });
+      if (!tooClose) { placed.push(idx); grid[idx] = T.KEY; }
+    }
+
+    // Relax spread constraint if not enough keys placed
+    for (const idx of candidates) {
+      if (placed.length >= keyCount) break;
+      if (!placed.includes(idx)) { placed.push(idx); grid[idx] = T.KEY; }
+    }
+
+    return grid;
   }
 
   return { init, start };
