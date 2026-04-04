@@ -181,6 +181,99 @@ const UI = (() => {
     ctx.textAlign = 'left';
   }
 
+  // ── Mini-map ─────────────────────────────────────────────
+  // Drawn in the bottom-right corner of the canvas (over the map area).
+  // Shows the full level layout at reduced scale with the player's position.
+  const MINIMAP_MAX  = 150; // max dimension in pixels
+  const MINIMAP_PAD  = 10;  // padding from canvas edge
+  let _minimapPulse  = 0;   // for player dot pulsing
+
+  function drawMinimap(ctx, canvasW, canvasH, playerCol, playerRow) {
+    const cols = Tilemap.cols();
+    const rows = Tilemap.rows();
+    if (cols === 0 || rows === 0) return;
+
+    // Scale minimap to fit within MINIMAP_MAX while keeping aspect ratio
+    let mmW, mmH;
+    if (cols >= rows) {
+      mmW = MINIMAP_MAX;
+      mmH = Math.round(MINIMAP_MAX * rows / cols);
+    } else {
+      mmH = MINIMAP_MAX;
+      mmW = Math.round(MINIMAP_MAX * cols / rows);
+    }
+
+    const tW = mmW / cols; // tile width in minimap pixels
+    const tH = mmH / rows; // tile height in minimap pixels
+    const mmX = canvasW - mmW - MINIMAP_PAD;
+    const mmY = canvasH - mmH - MINIMAP_PAD;
+
+    ctx.save();
+
+    // Background panel
+    ctx.fillStyle = 'rgba(5,5,20,0.78)';
+    ctx.strokeStyle = 'rgba(0,255,204,0.35)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(mmX - 3, mmY - 3, mmW + 6, mmH + 6);
+    ctx.strokeRect(mmX - 3, mmY - 3, mmW + 6, mmH + 6);
+
+    // Label
+    ctx.font = '8px Courier New';
+    ctx.fillStyle = 'rgba(0,255,204,0.55)';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('MAP', mmX - 2, mmY - 5);
+
+    // Draw tiles
+    const T = Tilemap.TILE;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const tile = Tilemap.get(c, r);
+        const tx = mmX + c * tW;
+        const ty = mmY + r * tH;
+        const tw = Math.max(1, tW);
+        const th = Math.max(1, tH);
+
+        if (tile === T.WALL) {
+          ctx.fillStyle = '#2a2a55';
+        } else if (tile === T.FLOOR || tile === T.DOOR_OPEN) {
+          ctx.fillStyle = '#141428';
+        } else if (tile === T.DOOR) {
+          ctx.fillStyle = '#ff8800';
+        } else if (tile === T.KEY) {
+          ctx.fillStyle = '#ffee00';
+        } else if (tile === T.EXIT) {
+          ctx.fillStyle = '#00ffcc';
+        } else if (tile === T.AMMO) {
+          ctx.fillStyle = '#00ff88';
+        } else {
+          ctx.fillStyle = '#141428';
+        }
+        ctx.fillRect(tx, ty, tw, th);
+      }
+    }
+
+    // Player dot — pulsing white circle
+    const dotR    = Math.max(2, Math.min(tW, tH) * 1.8);
+    const pulse   = (Math.sin(_minimapPulse * 5) + 1) / 2; // 0-1
+    const dotX    = mmX + (playerCol + 0.5) * tW;
+    const dotY    = mmY + (playerRow + 0.5) * tH;
+
+    ctx.shadowBlur  = 4 + pulse * 4;
+    ctx.shadowColor = '#ffffff';
+    ctx.fillStyle   = `rgba(255,255,255,${0.85 + pulse * 0.15})`;
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+  }
+
+  function updateMinimap(dt) {
+    _minimapPulse += dt;
+  }
+
   // ── Scanline overlay for atmosphere ─────────────────────
   function drawScanlines(ctx, w, h) {
     ctx.fillStyle = 'rgba(0,0,0,0.04)';
@@ -240,6 +333,7 @@ const UI = (() => {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
     showInfo, hideInfo, isInfoVisible,
     setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
-    update, drawHUD, drawScanlines, drawVignette, drawDangerWarning
+    update, drawHUD, drawScanlines, drawVignette, drawDangerWarning,
+    drawMinimap, updateMinimap
   };
 })();
