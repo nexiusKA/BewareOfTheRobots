@@ -317,6 +317,7 @@ const Game = (() => {
 
     // HUD
     UI.update(rawDt);
+    UI.updateMinimap(rawDt);
     UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
   }
 
@@ -357,6 +358,7 @@ const Game = (() => {
     UI.drawVignette(ctx, W, H);
     UI.drawDangerWarning(ctx, W, H);
     UI.drawScanlines(ctx, W, H);
+    UI.drawMinimap(ctx, W, H, Player.getCol(), Player.getRow());
     UI.drawHUD(ctx, W, H);
 
     // Debug mode indicator
