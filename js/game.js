@@ -177,6 +177,18 @@ const Game = (() => {
       _debugMode = !_debugMode;
     }
 
+    // Info overlay toggle — works from any game state
+    if (Input.isPressed('KeyI')) {
+      if (UI.isInfoVisible()) UI.hideInfo();
+      else UI.showInfo();
+    }
+    if (Input.isPressed('Escape') && UI.isInfoVisible()) {
+      UI.hideInfo();
+    }
+
+    // While info overlay is open, pause all game logic
+    if (UI.isInfoVisible()) return;
+
     // Global restart shortcut
     if (Input.isPressed('KeyR')) {
       if (_state !== STATE.INTRO) {

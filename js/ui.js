@@ -8,6 +8,7 @@ const UI = (() => {
   const overlayMsg     = document.getElementById('overlay-message');
   const overlayBtn     = document.getElementById('overlay-btn');
   const overlayContent = document.getElementById('overlay-content');
+  const infoOverlay    = document.getElementById('info-overlay');
 
   // ── Overlay helpers ──────────────────────────────────────
   function _clearTheme() {
@@ -25,7 +26,8 @@ const UI = (() => {
       'Collect keys, open doors, reach the exit.<br>' +
       'Avoid the patrol robots at all costs.<br>' +
       'Place bombs with <b>[SPACE]</b> to destroy enemies.<br><br>' +
-      '<small>WASD / Arrow keys to move &nbsp;|&nbsp; Space to place bomb &nbsp;|&nbsp; R to restart</small>';
+      '<small>WASD / Arrow keys to move &nbsp;|&nbsp; Space to place bomb &nbsp;|&nbsp; R to restart</small><br>' +
+      '<small>Press <b>[I]</b> in-game for full controls &amp; enemy info</small>';
     overlayBtn.textContent = 'START GAME';
     overlayBtn.onclick = onStart;
     overlay.classList.remove('hidden');
@@ -76,6 +78,22 @@ const UI = (() => {
   function hide() {
     overlay.classList.add('hidden');
   }
+
+  // ── Info overlay ─────────────────────────────────────────
+  let _infoVisible = false;
+
+  function showInfo() {
+    infoOverlay.querySelector('#info-close-btn').onclick = hideInfo;
+    infoOverlay.classList.remove('hidden');
+    _infoVisible = true;
+  }
+
+  function hideInfo() {
+    infoOverlay.classList.add('hidden');
+    _infoVisible = false;
+  }
+
+  function isInfoVisible() { return _infoVisible; }
 
   // ── HUD (drawn on canvas) ────────────────────────────────
   let _hudFlash = 0;   // key-collected flash timer
@@ -151,12 +169,12 @@ const UI = (() => {
     const bombDots = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
     ctx.fillText(`💣 ${bombDots}`, centerX + 60, y0 + barH / 2);
 
-    // Hint
+    // Hints — right-aligned: restart + info toggle
     ctx.fillStyle = 'rgba(0,255,204,0.45)';
     ctx.shadowBlur = 0;
     ctx.textAlign = 'right';
     ctx.font = '11px Courier New';
-    ctx.fillText('[R] RESTART', canvasW - pad, y0 + barH / 2);
+    ctx.fillText('[R] RESTART  [I] INFO', canvasW - pad, y0 + barH / 2);
 
     ctx.shadowBlur = 0;
     ctx.textBaseline = 'alphabetic';
@@ -220,6 +238,7 @@ const UI = (() => {
 
   return {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
+    showInfo, hideInfo, isInfoVisible,
     setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
     update, drawHUD, drawScanlines, drawVignette, drawDangerWarning
   };
