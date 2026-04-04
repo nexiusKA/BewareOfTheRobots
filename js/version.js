@@ -6,5 +6,6 @@ const BUILD_INFO = (function () {
     run:    'dev',
     sha:    'local',
     branch: 'local',
+    date:   'dev',
   };
 })();
