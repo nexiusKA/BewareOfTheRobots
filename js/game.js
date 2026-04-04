@@ -38,6 +38,12 @@ const Game = (() => {
   let _camX = 0;  // world-space left edge of viewport
   let _camY = 0;  // world-space top edge of viewport
 
+  // ── Held-key movement repeat ─────────────────────────────
+  const HOLD_INITIAL = 0.28; // seconds before repeat fires after initial press
+  const HOLD_REPEAT  = 0.16; // seconds between repeats while key is held
+  let _holdDir   = null;     // { dx, dy } of currently held direction
+  let _holdTimer = 0;        // countdown to next repeat move
+
   // ── Fail flash ───────────────────────────────────────────
   let _failFlash = 0;
 
@@ -123,6 +129,8 @@ const Game = (() => {
     _shakeY = 0;
     _threat = 0;
     _graceTimer = GRACE_DURATION;
+    _holdDir   = null;
+    _holdTimer = 0;
   }
 
   function _onKeyCollect() {
@@ -246,10 +254,30 @@ const Game = (() => {
     // Tilemap animation
     Tilemap.update(dt);
 
-    // Player input & movement
+    // Player input & movement — immediate on press, repeat on hold
     const { dx, dy } = Input.getMoveDelta();
     if (dx !== 0 || dy !== 0) {
+      // Fresh key press: move immediately and start hold timer
       Player.tryMove(dx, dy, _onKeyCollect, _onDoorOpen, null);
+      _holdDir   = { dx, dy };
+      _holdTimer = HOLD_INITIAL;
+    } else {
+      const held = Input.getHeldDir();
+      if (held.dx !== 0 || held.dy !== 0) {
+        // Key is still held — check if direction changed
+        if (!_holdDir || _holdDir.dx !== held.dx || _holdDir.dy !== held.dy) {
+          _holdDir   = held;
+          _holdTimer = HOLD_INITIAL;
+        }
+        _holdTimer -= rawDt;
+        if (_holdTimer <= 0 && !Player.isMoving()) {
+          Player.tryMove(held.dx, held.dy, _onKeyCollect, _onDoorOpen, null);
+          _holdTimer = HOLD_REPEAT;
+        }
+      } else {
+        _holdDir   = null;
+        _holdTimer = 0;
+      }
     }
 
     // Bomb placement — Space key
@@ -303,13 +331,10 @@ const Game = (() => {
       _shakeY = 0;
     }
 
-    // Camera — centre on player, clamped to map bounds.
-    // If the map is smaller than the viewport, the max clamp collapses to 0
-    // so the camera stays at the top-left corner (map shown from origin).
-    const mapW = Tilemap.pixelWidth();
-    const mapH = Tilemap.pixelHeight();
-    _camX = Utils.clamp(Player.getPx() - VIEWPORT_W / 2, 0, Math.max(0, mapW - VIEWPORT_W));
-    _camY = Utils.clamp(Player.getPy() - VIEWPORT_H / 2, 0, Math.max(0, mapH - VIEWPORT_H));
+    // Camera — always centred on player; no clamping so the player stays
+    // in the middle of the screen even near map edges (mobile-friendly).
+    _camX = Player.getPx() - VIEWPORT_W / 2;
+    _camY = Player.getPy() - VIEWPORT_H / 2;
 
     // Fail flash decay
     if (_failFlash > 0) _failFlash -= rawDt;
@@ -358,7 +383,7 @@ const Game = (() => {
     UI.drawVignette(ctx, W, H);
     UI.drawDangerWarning(ctx, W, H);
     UI.drawScanlines(ctx, W, H);
-    UI.drawMinimap(ctx, W, H, Player.getCol(), Player.getRow());
+    UI.drawMinimap(ctx, W, H, Player.getCol(), Player.getRow(), _debugMode);
     UI.drawHUD(ctx, W, H);
 
     // Debug mode indicator

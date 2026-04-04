@@ -69,6 +69,21 @@ const Input = (() => {
     return { dx, dy };
   }
 
+  // Returns { dx, dy } from currently held WASD / Arrow keys
+  function getHeldDir() {
+    const up    = isDown('ArrowUp')    || isDown('KeyW');
+    const down  = isDown('ArrowDown')  || isDown('KeyS');
+    const left  = isDown('ArrowLeft')  || isDown('KeyA');
+    const right = isDown('ArrowRight') || isDown('KeyD');
+    let dx = 0, dy = 0;
+    if (left)  dx -= 1;
+    if (right) dx += 1;
+    if (up)    dy -= 1;
+    if (down)  dy += 1;
+    if (dx !== 0 && dy !== 0) { dy = 0; }
+    return { dx, dy };
+  }
+
   // Simulate a single-frame key press from virtual (on-screen) controls.
   // flush() clears _justPressed every frame, so the press is automatically
   // consumed after one update cycle — no extra cleanup needed here.
@@ -76,5 +91,5 @@ const Input = (() => {
     _justPressed[code] = true;
   }
 
-  return { init, flush, isDown, isPressed, isReleased, isPressedKey, getMoveDelta, pressVirtual };
+  return { init, flush, isDown, isPressed, isReleased, isPressedKey, getMoveDelta, getHeldDir, pressVirtual };
 })();
