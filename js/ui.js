@@ -57,7 +57,7 @@ const UI = (() => {
     _applyClass('overlay-win');
     overlayTitle.textContent = 'SECTOR CLEARED';
     const isLast       = levelNum >= totalLevels;
-    const nextTheme    = isLast ? null : Themes.get(levelNum);   // levelNum is 1-indexed, Themes.get is 0-indexed
+    const nextTheme    = isLast ? null : Themes.get(levelNum);   // levelNum (1-indexed) doubles as the 0-indexed next-level index
     const themeChanged = nextTheme && nextTheme.id !== (_theme ? _theme.id : -1);
     let msg = `Sector ${levelNum} secured.<br>`;
     if (isLast) {
