@@ -213,6 +213,7 @@ const Game = (() => {
     // Toggle debug mode
     if (Input.isPressedKey('#')) {
       _debugMode = !_debugMode;
+      UI.setDebugMode(_debugMode);
       const panel = document.getElementById('debug-panel');
       if (panel) {
         if (_debugMode) {
@@ -229,6 +230,12 @@ const Game = (() => {
     if (Input.isPressed('KeyF')) {
       FogManager.toggle();
       UI.setFogMode(FogManager.isEnabled());
+    }
+
+    // Toggle ghost mode (G key) — player can move through walls
+    if (Input.isPressed('KeyG')) {
+      Player.setGhostMode(!Player.isGhostMode());
+      UI.setGhostMode(Player.isGhostMode());
     }
 
     // Info overlay toggle — works from any game state
