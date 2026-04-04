@@ -14,6 +14,7 @@ const Game = (() => {
 
   let _state = STATE.INTRO;
   let _currentLevel = 0;  // 0-indexed
+  let _totalKeysCollected = 0; // keys picked up this level (resets on level load)
 
   // ── Canvas / context ─────────────────────────────────────
   let _canvas = null;
@@ -121,7 +122,8 @@ const Game = (() => {
     EnemyManager.init(generated.enemies);
     BombManager.init();
 
-    UI.setHUD(index + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
+    _totalKeysCollected = 0;
+    UI.setHUD(index + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
 
     return true;
   }
@@ -143,7 +145,8 @@ const Game = (() => {
   }
 
   function _onKeyCollect() {
-    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
+    _totalKeysCollected++;
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
     UI.flashKeyCollect();
     Sound.keyPickup();
   }
@@ -152,7 +155,7 @@ const Game = (() => {
   let _bombPlaceFlash = 0;
 
   function _onAmmoCollect() {
-    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
     UI.flashAmmoCollect();
   }
 
@@ -309,10 +312,8 @@ const Game = (() => {
       BombManager.placeBomb(Player.getPx(), Player.getPy());
       Sound.bombPlace();
       _bombPlaceFlash = 0.12;
-      UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
+      UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
     }
-
-    Player.update(dt, _onKeyCollect, _onExit, _onAmmoCollect);
 
     // Expand fog exploration to current player position
     FogManager.reveal(Player.getCol(), Player.getRow());
@@ -369,7 +370,7 @@ const Game = (() => {
     // HUD
     UI.update(rawDt);
     UI.updateMinimap(rawDt);
-    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo());
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
   }
 
   function _render() {
