@@ -915,10 +915,20 @@ const EnemyManager = (() => {
 
   function getEnemies() { return _enemies; }
 
+  // Returns the number of active (non-disabled, non-destroyed) enemies that are
+  // currently in ALERT state.  Used by the global alert system in game.js.
+  function getAlertCount() {
+    let count = 0;
+    for (const e of _enemies) {
+      if (e.state === STATE.ALERT) count++;
+    }
+    return count;
+  }
+
   return {
     init, update, draw,
     addEnemy, removeDestroyed, isAnyAlert,
-    wasDetected, getNearAlert, getEnemies,
+    wasDetected, getNearAlert, getEnemies, getAlertCount,
     destroyEnemiesInRadius, killEnemiesInRadius, applyBlastInRadius,
     TYPE, STATE,
     setDetectTime, setConeScale, getDetectTime, getConeScale,

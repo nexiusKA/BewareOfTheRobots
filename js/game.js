@@ -62,6 +62,18 @@ const Game = (() => {
   const GRACE_DURATION = 1.5; // seconds
   let _graceTimer = 0;
 
+  // ── Global alert system ───────────────────────────────────
+  // Alert level (0-1) rises while enemies are in ALERT state and falls when
+  // they return to search/patrol.  Fail is triggered only if the level stays
+  // above ALERT_FAIL_THRESHOLD for ALERT_FAIL_DURATION seconds, replacing the
+  // old instant-fail on physical catch.
+  const ALERT_RISE_RATE      = 0.45; // per alerting enemy per second
+  const ALERT_FALL_RATE      = 0.22; // per second when no enemy is alert
+  const ALERT_FAIL_THRESHOLD = 0.85; // level that starts the fail countdown
+  const ALERT_FAIL_DURATION  = 3.0;  // seconds at threshold before fail
+  let _globalAlert    = 0;
+  let _alertHoldTimer = 0;
+
   // ── Debug mode (# key) ───────────────────────────────────
   let _debugMode = false;
 
@@ -140,6 +152,8 @@ const Game = (() => {
     _shakeY = 0;
     _threat = 0;
     _graceTimer = GRACE_DURATION;
+    _globalAlert    = 0;
+    _alertHoldTimer = 0;
     _holdDir   = null;
     _holdTimer = 0;
   }
@@ -330,10 +344,36 @@ const Game = (() => {
     // Grace period: suppress detection for the first seconds of a level
     if (_graceTimer > 0) _graceTimer -= rawDt;
 
-    if (EnemyManager.wasDetected() && !_debugMode && _graceTimer <= 0) {
-      _onDetected();
-      return;
+    // ── Global alert level ────────────────────────────────────────────────
+    // Rise while any enemy is in ALERT state; fall when the coast is clear.
+    const alertCount = EnemyManager.getAlertCount();
+    if (alertCount > 0) {
+      _globalAlert = Math.min(1, _globalAlert + alertCount * ALERT_RISE_RATE * rawDt);
+    } else {
+      _globalAlert = Math.max(0, _globalAlert - ALERT_FALL_RATE * rawDt);
     }
+
+    // Physical catch (enemy closes within catch radius) spikes alert to max
+    // instead of triggering an instant fail.
+    if (EnemyManager.wasDetected() && !_debugMode && _graceTimer <= 0) {
+      _globalAlert = 1;
+    }
+
+    // Fail only if alert sustains above threshold long enough (tension window).
+    if (!_debugMode && _graceTimer <= 0) {
+      if (_globalAlert >= ALERT_FAIL_THRESHOLD) {
+        _alertHoldTimer += rawDt;
+        if (_alertHoldTimer >= ALERT_FAIL_DURATION) {
+          _onDetected();
+          return;
+        }
+      } else {
+        // Timer drains at 2× the fill rate so brief escapes reset it quickly.
+        _alertHoldTimer = Math.max(0, _alertHoldTimer - rawDt * 2);
+      }
+    }
+
+    UI.setAlertLevel(_globalAlert, _alertHoldTimer, ALERT_FAIL_DURATION);
 
     // Near-detection slow-mo
     _threat = EnemyManager.getNearAlert(Player.getPx(), Player.getPy());
@@ -414,6 +454,7 @@ const Game = (() => {
     // Post-process
     UI.drawVignette(ctx, W, H);
     UI.drawDangerWarning(ctx, W, H);
+    UI.drawAlertWarning(ctx, W, H);
     UI.drawScanlines(ctx, W, H);
     UI.drawMinimap(ctx, W, H, Player.getCol(), Player.getRow(), _debugMode);
     UI.drawHUD(ctx, W, H);
