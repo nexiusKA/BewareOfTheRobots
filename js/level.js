@@ -20,26 +20,35 @@
 const Levels = (() => {
 
   const _levels = [
-    // ── Sector 1: Tutorial — wide open, slow enemies, generous ammo ──────────
-    { cols: 36, rows: 26, startBombs: 3, keyCount: 1, doorCount: 1,
-      ammoCount: 3, enemyCount: 4, scannerCount: 0,
+    // ── Sector 1: Introduction — movement, key, door, single guard ───────────
+    // Small, very open map. One slow GuardBot with a wide patrol the player
+    // can easily sidestep. Key is visible in the maze; door blocks the exit.
+    // No bombs, no puzzles — pure tutorial.
+    { cols: 22, rows: 18, startBombs: 0, keyCount: 1, doorCount: 1,
+      ammoCount: 0, enemyCount: 1, scannerCount: 0,
       snifferCount: 0, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.20, enemySpeedMult: 0.85, visionMult: 0.85,
+      extraPassageRate: 0.42, enemySpeedMult: 0.70, visionMult: 0.72,
+      minKeyDist: 5 },
+
+    // ── Sector 2: Exploration & Timing — side path, two guards ───────────────
+    // Small-medium map. Key is hidden off the main corridor so the player must
+    // explore. Two GuardBots whose paths cross at least once, introducing the
+    // timing challenge. One ammo crate as a reward for exploring.
+    { cols: 26, rows: 20, startBombs: 1, keyCount: 1, doorCount: 1,
+      ammoCount: 1, enemyCount: 2, scannerCount: 0,
+      snifferCount: 0, fastCount: 0, heavyCount: 0,
+      extraPassageRate: 0.25, enemySpeedMult: 0.80, visionMult: 0.80,
       minKeyDist: 8 },
 
-    // ── Sector 2: First scanner — introduces wide-angle vision ───────────────
-    { cols: 38, rows: 28, startBombs: 3, keyCount: 1, doorCount: 1,
-      ammoCount: 3, enemyCount: 5, scannerCount: 1,
+    // ── Sector 3: Multi-phase + ScannerBot intro — two keys, two doors ────────
+    // Medium map split into two distinct areas by the first door. Phase 1 uses
+    // a GuardBot; Phase 2 introduces the ScannerBot guarding the second key.
+    // No traps or pressure plates — focus is on planning the route.
+    { cols: 30, rows: 22, startBombs: 1, keyCount: 2, doorCount: 2,
+      ammoCount: 2, enemyCount: 1, scannerCount: 1,
       snifferCount: 0, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.18, enemySpeedMult: 0.90, visionMult: 0.90,
-      minKeyDist: 9 },
-
-    // ── Sector 3: Two-phase challenge — two colored doors ────────────────────
-    { cols: 40, rows: 30, startBombs: 2, keyCount: 2, doorCount: 2,
-      ammoCount: 3, enemyCount: 5, scannerCount: 1,
-      snifferCount: 0, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.14, enemySpeedMult: 1.00, visionMult: 1.00,
-      minKeyDist: 10 },
+      extraPassageRate: 0.18, enemySpeedMult: 0.88, visionMult: 0.88,
+      minKeyDist: 8 },
 
     // ── Sector 4: Sniffer introduced — detects through walls ─────────────────
     { cols: 42, rows: 32, startBombs: 2, keyCount: 2, doorCount: 2,
