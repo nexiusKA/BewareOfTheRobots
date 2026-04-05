@@ -7,10 +7,12 @@
 const Fullscreen = (function () {
   'use strict';
 
-  const CONTAINER_ID  = 'game-container';
-  const FS_CLASS      = 'is-fullscreen';
-  const PSEUDO_CLASS  = 'pseudo-fullscreen';
-  const TOAST_ID      = 'fs-toast';
+  const CONTAINER_ID       = 'game-container';
+  const FS_CLASS           = 'is-fullscreen';
+  const PSEUDO_CLASS       = 'pseudo-fullscreen';
+  const TOAST_ID           = 'fs-toast';
+  const TOAST_VISIBLE_MS   = 3500;  // how long the toast is shown
+  const TOAST_FADE_MS      = 500;   // must match .fs-toast { transition: opacity 0.5s }
 
   // Cached natural (pre-scale) dimensions of the game container.
   // Populated on first _applyScale() call and cleared when fullscreen exits.
@@ -84,8 +86,8 @@ const Fullscreen = (function () {
 
     setTimeout(function () {
       toast.classList.add('fs-toast-hide');
-      setTimeout(function () { toast.remove(); }, 500);
-    }, 3500);
+      setTimeout(function () { toast.remove(); }, TOAST_FADE_MS);
+    }, TOAST_VISIBLE_MS);
   }
 
   // ── Button state sync ────────────────────────────────────────

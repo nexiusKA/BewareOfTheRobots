@@ -107,14 +107,15 @@
     // action buttons) so the user gesture is recognised on all mobile browsers.
     const dpadFsBtn = document.getElementById('dpad-fullscreen');
     if (dpadFsBtn) {
+      function onDpadFsRelease() { dpadFsBtn.classList.remove('dpad-pressed'); }
       dpadFsBtn.addEventListener('pointerdown', function (e) {
         e.preventDefault();
         Fullscreen.toggle();
         dpadFsBtn.classList.add('dpad-pressed');
       });
-      dpadFsBtn.addEventListener('pointerup',     function () { dpadFsBtn.classList.remove('dpad-pressed'); });
-      dpadFsBtn.addEventListener('pointercancel', function () { dpadFsBtn.classList.remove('dpad-pressed'); });
-      dpadFsBtn.addEventListener('pointerleave',  function () { dpadFsBtn.classList.remove('dpad-pressed'); });
+      dpadFsBtn.addEventListener('pointerup',     onDpadFsRelease);
+      dpadFsBtn.addEventListener('pointercancel', onDpadFsRelease);
+      dpadFsBtn.addEventListener('pointerleave',  onDpadFsRelease);
     }
   })();
 
