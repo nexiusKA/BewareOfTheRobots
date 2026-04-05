@@ -16,12 +16,12 @@ body {
   padding: 16px;
 }
 
-/* On touch/mobile devices collapse padding and center vertically so the
-   auto-applied pseudo-fullscreen is already positioned cleanly. */
+/* On touch/mobile devices collapse padding and anchor to the top so the
+   scaled canvas uses the full screen from the top down. */
 @media (hover: none) and (pointer: coarse) {
   body {
     padding: 0;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100dvh;
     overflow: hidden;
     overscroll-behavior: none;
@@ -698,8 +698,8 @@ body {
     ".    up   ."
     "left .    right"
     ".    down .";
-  grid-template-columns: 80px 80px 80px;
-  grid-template-rows:    80px 80px 80px;
+  grid-template-columns: 96px 96px 96px;
+  grid-template-rows:    96px 96px 96px;
   gap: 8px;
 }
 
@@ -710,7 +710,7 @@ body {
 
 /* Movement buttons — primary, large, cyan accent */
 .dpad-move-btn {
-  font-size: 2rem;
+  font-size: 2.4rem;
   color: #00e8ff;
   border-color: rgba(0, 232, 255, 0.60);
   background: rgba(0, 232, 255, 0.10);
@@ -740,13 +740,13 @@ body {
 #dpad-system {
   position: absolute;
   top: auto;
-  bottom: 122px;  /* above bomb zone: 20px bottom + 90px bomb + 12px gap */
+  bottom: 142px;  /* above bomb zone: 20px bottom + 110px bomb + 12px gap */
   right: 4px;
   pointer-events: auto;
   display: grid;
-  grid-template-columns: 48px 48px;
-  grid-template-rows: repeat(4, 48px);
-  gap: 5px;
+  grid-template-columns: 60px 60px;
+  grid-template-rows: repeat(4, 60px);
+  gap: 6px;
 }
 
 /* Common button base */
@@ -755,9 +755,9 @@ body {
   border: 2px solid rgba(0, 255, 204, 0.55);
   border-radius: 14px;
   color: #00ffcc;
-  font-size: 1.8rem;
-  width: 80px;
-  height: 80px;
+  font-size: 2.2rem;
+  width: 96px;
+  height: 96px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -778,9 +778,9 @@ body {
 
 /* System buttons — compact, slightly larger for thumb reachability */
 #dpad-system .dpad-btn {
-  width: 48px;
-  height: 48px;
-  font-size: 1.15rem;
+  width: 60px;
+  height: 60px;
+  font-size: 1.4rem;
   border-width: 1.5px;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.62);
@@ -794,12 +794,12 @@ body {
 
 /* Bomb action button — orange, larger, round */
 .dpad-bomb-btn {
-  width: 90px;
-  height: 90px;
+  width: 110px;
+  height: 110px;
   color: #ff9900;
   border-color: rgba(255, 153, 0, 0.65);
   background: rgba(255, 153, 0, 0.14);
-  font-size: 2.4rem;
+  font-size: 2.8rem;
   border-radius: 50%;
   box-shadow: 0 0 16px rgba(255, 153, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.07);
 }
@@ -893,7 +893,7 @@ body.pseudo-fullscreen {
   min-height: 100dvh;
   height: 100dvh;
   overflow: hidden;
-  align-items: center;           /* vertically center the game container */
+  align-items: flex-start;        /* anchor game to top — no wasted space above */
   overscroll-behavior: none;     /* prevent pull-to-refresh / over-scroll */
   touch-action: none;            /* prevent pinch-zoom and inadvertent scroll */
 }

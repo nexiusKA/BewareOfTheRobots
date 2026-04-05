@@ -59,7 +59,7 @@ const Fullscreen = (function () {
 
     const scale = Math.min(window.innerWidth / _natW, window.innerHeight / _natH);
     el.style.transform       = 'scale(' + scale + ')';
-    el.style.transformOrigin = 'center center';
+    el.style.transformOrigin = 'top center';
   }
 
   function _clearScale() {
