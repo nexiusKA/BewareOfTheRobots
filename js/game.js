@@ -82,7 +82,8 @@ const Game = (() => {
   let _debugMode = false;
 
   // ── Conveyor tracking ────────────────────────────────────
-  // Prevents conveyors from chaining more than 4 tiles per player action.
+  // Prevents conveyors from chaining more than MAX_CONVEYOR_CHAIN tiles per player action.
+  const MAX_CONVEYOR_CHAIN = 4;
   let _conveyorChain = 0;
 
   // ── Trap tracking ────────────────────────────────────────
