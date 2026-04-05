@@ -109,6 +109,7 @@ const Tilemap = (() => {
   // ── Animation ───────────────────────────────────────────
   let _blinkTimer = 0;
   let _blinkPhase = 0;
+  let _fastBlinkPhase = 0; // faster oscillation for collectibles
 
   // Door-open flash effects: key = "col,row", value = 0-1 (1=just opened, fades to 0)
   let _doorOpenEffects = {};
@@ -123,7 +124,8 @@ const Tilemap = (() => {
 
   function update(dt) {
     _blinkTimer += dt;
-    _blinkPhase = (Math.sin(_blinkTimer * 3) + 1) / 2; // 0-1
+    _blinkPhase     = (Math.sin(_blinkTimer * 3) + 1) / 2; // 0-1 at ~3 Hz
+    _fastBlinkPhase = (Math.sin(_blinkTimer * 6) + 1) / 2; // 0-1 at ~6 Hz
 
     // Decay door-open flash effects (0.55 second fade)
     for (const key in _doorOpenEffects) {
@@ -154,12 +156,20 @@ const Tilemap = (() => {
         } else if (tile === TILE.DOOR) {
           _drawDoor(ctx, x, y);
         } else if (tile === TILE.KEY) {
+          ctx.fillStyle = `rgba(255,220,0,${0.04 + _fastBlinkPhase * 0.08})`;
+          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawKey(ctx, x, y);
         } else if (tile === TILE.EXIT) {
+          ctx.fillStyle = `rgba(0,255,204,${0.04 + _fastBlinkPhase * 0.08})`;
+          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawExit(ctx, x, y);
         } else if (tile === TILE.AMMO) {
+          ctx.fillStyle = `rgba(0,255,136,${0.03 + _fastBlinkPhase * 0.07})`;
+          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawAmmo(ctx, x, y);
         } else if (tile === TILE.DEMOLITION) {
+          ctx.fillStyle = `rgba(255,100,0,${0.03 + _fastBlinkPhase * 0.07})`;
+          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawDemolition(ctx, x, y);
         }
 
@@ -422,8 +432,8 @@ const Tilemap = (() => {
   function _drawKey(ctx, x, y) {
     const cx    = x + TILE_SIZE / 2;
     const cy    = y + TILE_SIZE / 2;
-    const blink = _blinkPhase;
-    const glow  = 6 + blink * 6;
+    const blink = _fastBlinkPhase;
+    const glow  = 8 + blink * 12;
 
     ctx.save();
     ctx.shadowBlur  = glow;
@@ -453,8 +463,8 @@ const Tilemap = (() => {
   // ── Exit ─────────────────────────────────────────────────
   function _drawExit(ctx, x, y) {
     const s     = TILE_SIZE;
-    const blink = _blinkPhase;
-    const glow  = 8 + blink * 8;
+    const blink = _fastBlinkPhase;
+    const glow  = 10 + blink * 12;
     ctx.save();
     ctx.shadowBlur  = glow;
     ctx.shadowColor = '#00ffcc';

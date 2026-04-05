@@ -38,6 +38,7 @@ const Game = (() => {
   const _HUD_HEIGHT   = 38; // pixels reserved at top for HUD bar
   let _camX = 0;  // world-space left edge of viewport
   let _camY = 0;  // world-space top edge of viewport
+  const CAM_SMOOTH = 12; // camera lerp speed (higher = tighter follow)
 
   // ── Held-key movement repeat ─────────────────────────────
   const HOLD_INITIAL = 0.28; // seconds before repeat fires after initial press
@@ -49,9 +50,12 @@ const Game = (() => {
   let _failFlash = 0;
 
   // ── Camera shake ─────────────────────────────────────────
-  const SHAKE_DURATION = 0.55;
-  const SHAKE_AMP      = 9;
-  let _shakeDur = 0;
+  const SHAKE_DURATION      = 0.55;
+  const SHAKE_AMP           = 9;
+  const EXPLODE_SHAKE_DURATION = 0.35;
+  const EXPLODE_SHAKE_AMP      = 6;
+  let _shakeDur        = 0;
+  let _explodeShakeDur = 0;
   let _shakeX   = 0;
   let _shakeY   = 0;
 
@@ -86,10 +90,15 @@ const Game = (() => {
     const _applyBtn  = document.getElementById('debug-apply-btn');
     const _dtInput   = document.getElementById('debug-detect-time');
     const _csInput   = document.getElementById('debug-cone-scale');
+    const _jumpBtn   = document.getElementById('debug-jump-btn');
+    const _lvlInput  = document.getElementById('debug-level-select');
     const _stopAndApplyOnEnter = e => { e.stopPropagation(); if (e.key === 'Enter') _applyDebugSettings(); };
+    const _stopOnKey = e => e.stopPropagation();
     if (_applyBtn) _applyBtn.addEventListener('click', _applyDebugSettings);
     if (_dtInput)  _dtInput.addEventListener('keydown', _stopAndApplyOnEnter);
     if (_csInput)  _csInput.addEventListener('keydown', _stopAndApplyOnEnter);
+    if (_lvlInput) _lvlInput.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') _jumpToDebugLevel(); });
+    if (_jumpBtn)  _jumpBtn.addEventListener('click', _jumpToDebugLevel);
 
     _loadLevel(_currentLevel);
     Menu.show(_onStart);
@@ -100,6 +109,14 @@ const Game = (() => {
     const csVal = parseFloat(document.getElementById('debug-cone-scale').value) / 100;
     if (!isNaN(dtVal) && dtVal > 0) EnemyManager.setDetectTime(dtVal);
     if (!isNaN(csVal) && csVal > 0) EnemyManager.setConeScale(csVal);
+  }
+
+  function _jumpToDebugLevel() {
+    const lvlVal = parseInt(document.getElementById('debug-level-select').value, 10);
+    if (isNaN(lvlVal)) return;
+    const idx = Math.max(0, Math.min(Levels.count() - 1, lvlVal - 1));
+    UI.hide();
+    _startLevel(idx);
   }
 
   function _onStart() {
@@ -133,6 +150,10 @@ const Game = (() => {
     EnemyManager.init(generated.enemies);
     BombManager.init();
 
+    // Snap camera to player start to avoid a panning-in effect on level load
+    _camX = Player.getPx() - VIEWPORT_W / 2;
+    _camY = Player.getPy() - VIEWPORT_H / 2;
+
     _totalKeysCollected = 0;
     UI.setHUD(index + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
 
@@ -147,6 +168,7 @@ const Game = (() => {
     _targetTimeScale = 1.0;
     _failFlash = 0;
     _shakeDur = 0;
+    _explodeShakeDur = 0;
     _shakeX = 0;
     _shakeY = 0;
     _threat = 0;
@@ -235,6 +257,11 @@ const Game = (() => {
         if (_debugMode) {
           document.getElementById('debug-detect-time').value = EnemyManager.getDetectTime().toFixed(2);
           document.getElementById('debug-cone-scale').value  = Math.round(EnemyManager.getConeScale() * 100);
+          const lvlInput = document.getElementById('debug-level-select');
+          if (lvlInput) {
+            lvlInput.max   = Levels.count();
+            lvlInput.value = _currentLevel + 1;
+          }
           panel.classList.remove('hidden');
         } else {
           panel.classList.add('hidden');
@@ -275,20 +302,30 @@ const Game = (() => {
       }
     }
 
-    if (_state !== STATE.PLAYING) {
-      // Still update shake even after detection so it feels dramatic
+    // Camera shake decay — runs on real time regardless of game state so the
+    // post-detection shake still plays during FAIL/WIN screens.
+    {
+      let shakeAmp = 0;
       if (_shakeDur > 0) {
         _shakeDur -= rawDt;
-        const amp = SHAKE_AMP * (_shakeDur / SHAKE_DURATION);
-        _shakeX = (Math.random() * 2 - 1) * amp;
-        _shakeY = (Math.random() * 2 - 1) * amp;
+        if (_shakeDur < 0) _shakeDur = 0;
+        shakeAmp = Math.max(shakeAmp, SHAKE_AMP * (_shakeDur / SHAKE_DURATION));
+      }
+      if (_explodeShakeDur > 0) {
+        _explodeShakeDur -= rawDt;
+        if (_explodeShakeDur < 0) _explodeShakeDur = 0;
+        shakeAmp = Math.max(shakeAmp, EXPLODE_SHAKE_AMP * (_explodeShakeDur / EXPLODE_SHAKE_DURATION));
+      }
+      if (shakeAmp > 0) {
+        _shakeX = (Math.random() * 2 - 1) * shakeAmp;
+        _shakeY = (Math.random() * 2 - 1) * shakeAmp;
       } else {
-        _shakeDur = 0;
         _shakeX = 0;
         _shakeY = 0;
       }
-      return;
     }
+
+    if (_state !== STATE.PLAYING) return;
 
     // Tilemap animation
     Tilemap.update(dt);
@@ -336,6 +373,9 @@ const Game = (() => {
 
     // Bombs
     BombManager.update(dt);
+    if (BombManager.takeExplosionShake()) {
+      _explodeShakeDur = Math.max(_explodeShakeDur, EXPLODE_SHAKE_DURATION);
+    }
 
     // Enemies
     EnemyManager.update(dt, Player.getPx(), Player.getPy());
@@ -388,22 +428,12 @@ const Game = (() => {
     UI.setVignette(_threat * 0.9);
     UI.setDanger(_threat);
 
-    // Camera shake decay (runs on real time so shake feels physical)
-    if (_shakeDur > 0) {
-      _shakeDur -= rawDt;
-      const amp = SHAKE_AMP * (_shakeDur / SHAKE_DURATION);
-      _shakeX = (Math.random() * 2 - 1) * amp;
-      _shakeY = (Math.random() * 2 - 1) * amp;
-    } else {
-      _shakeDur = 0;
-      _shakeX = 0;
-      _shakeY = 0;
-    }
-
-    // Camera — always centred on player; no clamping so the player stays
-    // in the middle of the screen even near map edges (mobile-friendly).
-    _camX = Player.getPx() - VIEWPORT_W / 2;
-    _camY = Player.getPy() - VIEWPORT_H / 2;
+    // Camera — smoothly follow the player pixel position
+    const _camTargetX = Player.getPx() - VIEWPORT_W / 2;
+    const _camTargetY = Player.getPy() - VIEWPORT_H / 2;
+    const camFactor = Math.min(1, rawDt * CAM_SMOOTH);
+    _camX = Utils.lerp(_camX, _camTargetX, camFactor);
+    _camY = Utils.lerp(_camY, _camTargetY, camFactor);
 
     // Fail flash decay
     if (_failFlash > 0) _failFlash -= rawDt;

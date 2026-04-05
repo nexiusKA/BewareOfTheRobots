@@ -620,6 +620,32 @@ body {
   box-shadow: 0 0 8px rgba(0, 255, 68, 0.3);
 }
 
+.debug-divider {
+  border: none;
+  border-top: 1px solid rgba(0, 255, 68, 0.15);
+  margin: 10px 0 6px;
+}
+
+#debug-jump-btn {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  background: transparent;
+  border: 1px solid #00ccff66;
+  color: #00ccff;
+  font-family: inherit;
+  font-size: 0.76rem;
+  letter-spacing: 2px;
+  padding: 4px 0;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+#debug-jump-btn:hover {
+  background: rgba(0, 204, 255, 0.1);
+  box-shadow: 0 0 8px rgba(0, 204, 255, 0.3);
+}
+
 .debug-note {
   margin-top: 8px;
   font-size: 0.68rem;
