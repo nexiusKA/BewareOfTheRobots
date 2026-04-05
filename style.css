@@ -698,8 +698,8 @@ body {
     ".    up   ."
     "left .    right"
     ".    down .";
-  grid-template-columns: 96px 96px 96px;
-  grid-template-rows:    96px 96px 96px;
+  grid-template-columns: 110px 110px 110px;
+  grid-template-rows:    110px 110px 110px;
   gap: 8px;
 }
 
@@ -724,11 +724,12 @@ body {
   transform: scale(0.91);
 }
 
-/* ── Zone 2: Action pad (bottom-right) ───────────────────── */
+/* ── Zone 2: Action pad (bottom-center) ──────────────────── */
 #dpad-actions {
   position: absolute;
   bottom: 20px;
-  right: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   pointer-events: auto;
   display: flex;
   flex-direction: column;
@@ -736,17 +737,17 @@ body {
   gap: 10px;
 }
 
-/* ── Zone 3: System pad (bottom-right, above action buttons) ─ */
+/* ── Zone 3: System pad (bottom-right, compact 2-col grid) ── */
 #dpad-system {
   position: absolute;
   top: auto;
-  bottom: 142px;  /* above bomb zone: 20px bottom + 110px bomb + 12px gap */
-  right: 4px;
+  bottom: 20px;
+  right: 8px;
   pointer-events: auto;
   display: grid;
-  grid-template-columns: 60px 60px;
-  grid-template-rows: repeat(4, 60px);
-  gap: 6px;
+  grid-template-columns: 72px 72px;
+  grid-template-rows: repeat(4, 72px);
+  gap: 4px;
 }
 
 /* Common button base */
@@ -756,8 +757,8 @@ body {
   border-radius: 14px;
   color: #00ffcc;
   font-size: 2.2rem;
-  width: 96px;
-  height: 96px;
+  width: 110px;
+  height: 110px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -778,9 +779,9 @@ body {
 
 /* System buttons — compact, slightly larger for thumb reachability */
 #dpad-system .dpad-btn {
-  width: 60px;
-  height: 60px;
-  font-size: 1.4rem;
+  width: 72px;
+  height: 72px;
+  font-size: 1.6rem;
   border-width: 1.5px;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.62);
@@ -991,13 +992,13 @@ body.pseudo-fullscreen #game-container {
 
   #dpad-actions {
     bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
-    right:  max(16px, calc(env(safe-area-inset-right)  + 8px));
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   #dpad-system {
-    /* env() + 12px (bomb safe offset) + 90px (bomb height) + 12px (gap above bomb) */
-    bottom: max(122px, calc(env(safe-area-inset-bottom) + 114px));
-    right:  max(4px,   env(safe-area-inset-right));
+    bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+    right:  max(8px,  env(safe-area-inset-right));
   }
 }
 
