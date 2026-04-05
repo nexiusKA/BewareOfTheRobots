@@ -654,48 +654,85 @@ body {
   line-height: 1.4;
 }
 
-/* ── Mobile D-pad ────────────────────────────────────────── */
+/* ── Mobile controls — three zones ──────────────────────── */
+
+/* Outer container: full-screen transparent overlay, pointer-events disabled
+   so taps pass through to the canvas except on the button groups. */
 #dpad {
-  display: none; /* hidden on non-touch devices */
+  display: none;
   position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  grid-template-areas:
-    "ghost up . info"
-    "left . right bomb"
-    "debug down fog restart";
-  grid-template-columns: repeat(4, 64px);
-  grid-template-rows: repeat(3, 64px);
-  gap: 5px;
+  inset: 0;
+  pointer-events: none;
   user-select: none;
   z-index: 50;
 }
 
 @media (hover: none) and (pointer: coarse) {
-  #dpad { display: grid; }
+  #dpad { display: block; }
 }
 
-/* Force-show d-pad when manually activated via menu toggle */
-#dpad.dpad-active { display: grid; }
+/* Force-show when manually activated via menu toggle */
+#dpad.dpad-active { display: block; }
 
-#dpad-up      { grid-area: up; }
-#dpad-left    { grid-area: left; }
-#dpad-right   { grid-area: right; }
-#dpad-down    { grid-area: down; }
-#dpad-bomb    { grid-area: bomb; }
-#dpad-info    { grid-area: info; }
-#dpad-restart { grid-area: restart; }
-#dpad-ghost   { grid-area: ghost; }
-#dpad-fog     { grid-area: fog; }
-#dpad-debug   { grid-area: debug; }
+/* ── Zone 1: Movement pad (bottom-left) ─────────────────── */
+#dpad-move {
+  position: absolute;
+  bottom: 20px;
+  left: 16px;
+  pointer-events: auto;
+  display: grid;
+  grid-template-areas:
+    ".    up   ."
+    "left .    right"
+    ".    down .";
+  grid-template-columns: 64px 64px 64px;
+  grid-template-rows:    64px 64px 64px;
+  gap: 6px;
+}
 
+#dpad-up    { grid-area: up; }
+#dpad-left  { grid-area: left; }
+#dpad-right { grid-area: right; }
+#dpad-down  { grid-area: down; }
+
+/* Movement buttons — primary, large */
+.dpad-move-btn {
+  font-size: 1.6rem;
+}
+
+/* ── Zone 2: Action pad (bottom-right) ───────────────────── */
+#dpad-actions {
+  position: absolute;
+  bottom: 20px;
+  right: 16px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Zone 3: System pad (top-right, below HUD) ───────────── */
+#dpad-system {
+  position: absolute;
+  top: 48px;  /* below the 38px HUD bar + margin */
+  right: 8px;
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 48px 48px;
+  grid-template-rows: repeat(3, 48px);
+  gap: 6px;
+}
+
+/* Common button base */
 .dpad-btn {
   background: rgba(0, 255, 204, 0.10);
   border: 2px solid rgba(0, 255, 204, 0.45);
   border-radius: 8px;
   color: #00ffcc;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -712,88 +749,98 @@ body {
   box-shadow: 0 0 12px rgba(0, 255, 204, 0.55);
 }
 
-/* Bomb action button — orange accent */
+/* System buttons — smaller */
+#dpad-system .dpad-btn {
+  width: 48px;
+  height: 48px;
+  font-size: 1.15rem;
+  border-width: 1.5px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Bomb action button — orange, larger */
 .dpad-bomb-btn {
+  width: 72px;
+  height: 72px;
   color: #ff9900;
   border-color: rgba(255, 153, 0, 0.5);
   background: rgba(255, 153, 0, 0.12);
-  font-size: 1.8rem;
+  font-size: 2rem;
+  border-radius: 50%; /* round for visual distinctness */
 }
 
 .dpad-bomb-btn:active,
 .dpad-bomb-btn.dpad-pressed {
   background: rgba(255, 153, 0, 0.32);
-  box-shadow: 0 0 14px rgba(255, 153, 0, 0.65);
+  box-shadow: 0 0 18px rgba(255, 153, 0, 0.65);
 }
 
-/* Info button — soft blue/white accent */
+/* Info button */
 .dpad-info-btn {
   color: #66ccff;
   border-color: rgba(102, 204, 255, 0.45);
-  background: rgba(102, 204, 255, 0.10);
-  font-size: 1.4rem;
+  background: rgba(102, 204, 255, 0.08);
 }
 
 .dpad-info-btn:active,
 .dpad-info-btn.dpad-pressed {
-  background: rgba(102, 204, 255, 0.28);
-  box-shadow: 0 0 12px rgba(102, 204, 255, 0.55);
+  background: rgba(102, 204, 255, 0.26);
+  box-shadow: 0 0 10px rgba(102, 204, 255, 0.55);
 }
 
-/* Ghost mode button — purple accent */
+/* Ghost mode button */
 .dpad-ghost-btn {
   color: #cc88ff;
   border-color: rgba(204, 136, 255, 0.45);
-  background: rgba(204, 136, 255, 0.10);
-  font-size: 1.4rem;
+  background: rgba(204, 136, 255, 0.08);
 }
 
 .dpad-ghost-btn:active,
 .dpad-ghost-btn.dpad-pressed {
-  background: rgba(204, 136, 255, 0.28);
-  box-shadow: 0 0 12px rgba(204, 136, 255, 0.55);
+  background: rgba(204, 136, 255, 0.26);
+  box-shadow: 0 0 10px rgba(204, 136, 255, 0.55);
 }
 
-/* Fog mode button — grey/white accent */
+/* Fog mode button */
 .dpad-fog-btn {
   color: #aaddff;
   border-color: rgba(170, 221, 255, 0.45);
-  background: rgba(170, 221, 255, 0.10);
-  font-size: 1.3rem;
+  background: rgba(170, 221, 255, 0.08);
 }
 
 .dpad-fog-btn:active,
 .dpad-fog-btn.dpad-pressed {
-  background: rgba(170, 221, 255, 0.28);
-  box-shadow: 0 0 12px rgba(170, 221, 255, 0.55);
+  background: rgba(170, 221, 255, 0.26);
+  box-shadow: 0 0 10px rgba(170, 221, 255, 0.55);
 }
 
-/* Debug button — red/magenta accent */
+/* Debug button */
 .dpad-debug-btn {
   color: #ff4477;
   border-color: rgba(255, 68, 119, 0.45);
-  background: rgba(255, 68, 119, 0.10);
-  font-size: 1.3rem;
+  background: rgba(255, 68, 119, 0.08);
+  font-size: 1.1rem;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
 }
 
 .dpad-debug-btn:active,
 .dpad-debug-btn.dpad-pressed {
-  background: rgba(255, 68, 119, 0.28);
-  box-shadow: 0 0 12px rgba(255, 68, 119, 0.55);
+  background: rgba(255, 68, 119, 0.26);
+  box-shadow: 0 0 10px rgba(255, 68, 119, 0.55);
 }
+
+/* Restart button */
 .dpad-restart-btn {
   color: #ffdd44;
   border-color: rgba(255, 221, 68, 0.45);
-  background: rgba(255, 221, 68, 0.10);
-  font-size: 1.5rem;
+  background: rgba(255, 221, 68, 0.08);
 }
 
 .dpad-restart-btn:active,
 .dpad-restart-btn.dpad-pressed {
-  background: rgba(255, 221, 68, 0.28);
-  box-shadow: 0 0 12px rgba(255, 221, 68, 0.55);
+  background: rgba(255, 221, 68, 0.26);
+  box-shadow: 0 0 10px rgba(255, 221, 68, 0.55);
 }
 
 /* ── Mobile toggle button (shown in all menu overlays) ──── */

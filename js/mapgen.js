@@ -16,11 +16,23 @@ const MapGen = (() => {
   // Tile shorthands
   const W = 1; // WALL
   const F = 0; // FLOOR
-  const D = 2; // DOOR (locked)
+  const D = 2; // DOOR (locked — yellow)
   const E = 5; // EXIT
   const A = 6; // AMMO pickup
-  const K = 4; // KEY (placeholder — redistributed by game.js)
+  const K = 4; // KEY — yellow
   const P = 7; // DEMOLITION perk pickup
+  // Colored doors
+  const D_R = 11; // DOOR_RED
+  const D_B = 12; // DOOR_BLUE
+  const D_G = 13; // DOOR_GREEN
+  // Colored keys (placeholder tiles redistributed by game.js)
+  const K_R = 8;  // KEY_RED
+  const K_B = 9;  // KEY_BLUE
+  const K_G = 10; // KEY_GREEN
+
+  // Color sequences (index = player encounter order, 0 = first door hit)
+  const _DOOR_COLOR_TILES = [D, D_R, D_B, D_G];
+  const _KEY_COLOR_TILES  = [K, K_R, K_B, K_G];
 
   // ── Public API ───────────────────────────────────────────
 
@@ -31,6 +43,9 @@ const MapGen = (() => {
   function generate(config) {
     const { cols, rows, doorCount, ammoCount, keyCount,
             enemyCount, scannerCount } = config;
+    const snifferCount = config.snifferCount || 0;
+    const fastCount    = config.fastCount    || 0;
+    const heavyCount   = config.heavyCount   || 0;
     // Difficulty tuning fields — all have sensible defaults so old configs work.
     const extraPassageRate = config.extraPassageRate ?? 0.12;
     const enemySpeedMult   = config.enemySpeedMult   ?? 1.00;
@@ -67,7 +82,9 @@ const MapGen = (() => {
       // Odd column for door so it aligns cleanly with maze cells
       const dc = _pickOdd(3, cols - 4);
       doorCols.push(dc);
-      grid[dr * cols + dc] = D;
+      // Assign color based on player encounter order (last door = first encountered = yellow)
+      const playerDoorIdx = doorCount - 1 - d;
+      grid[dr * cols + dc] = _DOOR_COLOR_TILES[playerDoorIdx % 4];
     }
 
     // ── 4. Carve maze zones ─────────────────────────────────
@@ -87,7 +104,6 @@ const MapGen = (() => {
       if (dr > 1)      grid[(dr - 1) * cols + dc] = F;
       if (dr < rows-1) grid[(dr + 1) * cols + dc] = F;
     }
-
     // ── 6. Highway corridors for enemy patrol ───────────────
     // Open full horizontal rows so enemies have straight paths.
     // One corridor in the exit zone and several in the main zone.
@@ -98,7 +114,7 @@ const MapGen = (() => {
     const corridorRows = _buildHighwayCorridors(
       grid, cols, rows,
       doorRows,
-      enemyCount + scannerCount,
+      enemyCount + scannerCount + snifferCount + fastCount + heavyCount,
       mainStart, mainEnd
     );
 
@@ -117,17 +133,36 @@ const MapGen = (() => {
     // including post-door sections, rewarding thorough exploration.
     _placePickups(grid, cols, 1, P, 2, mainEnd, playerCol, playerRow, 6);
 
-    // ── 8. Key placeholders ─────────────────────────────────
-    // Place K tiles in the main zone so _randomizeKeyPositions
-    // (game.js) can count and redistribute them.
-    _placePickups(grid, cols, keyCount, K, mainStart, mainEnd, playerCol, playerRow, 4);
+    // ── 8. Key placeholders (one per zone, color-matched to door) ──
+    // Zone 0 (main zone) gets yellow key, zone 1 gets red, zone 2 blue, etc.
+    // Each key is placed in the zone directly below its matching door.
+    const n = doorRows.length;
+    for (let i = 0; i < doorCount; i++) {
+      const keyTile = _KEY_COLOR_TILES[i % 4];
+      let zoneTop, zoneBot;
+      if (i === 0) {
+        // Main zone: between last door (closest to player) and map bottom
+        zoneTop = n > 0 ? doorRows[n - 1] + 1 : mainStart;
+        zoneBot = mainEnd;
+      } else {
+        // Zone i: between door[n-1-i] (upper) and door[n-i] (lower)
+        const upperDoor = doorRows[n - 1 - i];
+        const lowerDoor = doorRows[n - i];
+        zoneTop = upperDoor + 1;
+        zoneBot = lowerDoor - 1;
+      }
+      if (zoneTop <= zoneBot) {
+        const minDist = (i === 0) ? 4 : 2;
+        _placePickups(grid, cols, 1, keyTile, zoneTop, zoneBot, playerCol, playerRow, minDist);
+      }
+    }
 
     // ── 9. Player start ─────────────────────────────────────
     grid[playerRow * cols + playerCol] = F;
 
     // ── 10. Generate enemy definitions ──────────────────────
     const enemies = _buildEnemies(
-      cols, enemyCount, scannerCount,
+      cols, enemyCount, scannerCount, snifferCount, fastCount, heavyCount,
       corridorRows, doorRows,
       enemySpeedMult, visionMult
     );
@@ -292,7 +327,8 @@ const MapGen = (() => {
 
   // ── Enemy generation ─────────────────────────────────────
 
-  function _buildEnemies(cols, enemyCount, scannerCount, corridorRows, doorRows,
+  function _buildEnemies(cols, enemyCount, scannerCount, snifferCount, fastCount, heavyCount,
+                         corridorRows, doorRows,
                          enemySpeedMult = 1.0, visionMult = 1.0) {
     const enemies = [];
     const mainCorridors  = corridorRows.filter(c => c.zone === 'main');
@@ -306,11 +342,18 @@ const MapGen = (() => {
     for (let i = 0; i < scannerCount; i++) {
       allEnemySlots.push({ type: 'scanner_bot', idx: i });
     }
+    for (let i = 0; i < snifferCount; i++) {
+      allEnemySlots.push({ type: 'sniffer_bot', idx: i });
+    }
+    for (let i = 0; i < fastCount; i++) {
+      allEnemySlots.push({ type: 'fast_bot', idx: i });
+    }
+    for (let i = 0; i < heavyCount; i++) {
+      allEnemySlots.push({ type: 'heavy_bot', idx: i });
+    }
 
     // Distribute enemy slots across corridors, interleaving main and upper
     // zones so that post-door sections always receive patrol coverage.
-    // Without interleaving, all enemies would fill the main zone first,
-    // leaving inter-door zones empty.
     const corridorCycle = [];
     const maxLen = Math.max(mainCorridors.length, upperCorridors.length);
     for (let i = 0; i < maxLen; i++) {
@@ -325,19 +368,12 @@ const MapGen = (() => {
       const isScannerBot = slot.type === 'scanner_bot';
 
       // ── Patrol style ────────────────────────────────────────
-      // Every third guard_bot patrols only the middle portion of the
-      // corridor (creating an intersection choke-point that the player
-      // must time carefully).  Scanners always do full-width patrols so
-      // their wide vision angle covers the whole corridor.
       let colA, colB;
       if (!isScannerBot && slotIdx % 3 === 2 && cols > 20) {
-        // Intersection guard: patrol middle 40% of corridor.
-        // edgeMargin is 30% of cols, leaving the inner 40% as the patrol range.
         const edgeMargin = Math.floor(cols * 0.30);
         colA = edgeMargin;
         colB = cols - 1 - edgeMargin;
       } else {
-        // Full-width patrol: alternate direction per slot
         const ltr = slotIdx % 2 === 0;
         colA = ltr ? 1        : cols - 2;
         colB = ltr ? cols - 2 : 1;

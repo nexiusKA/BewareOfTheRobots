@@ -8,12 +8,20 @@ const Tilemap = (() => {
   const TILE = {
     FLOOR:       0,
     WALL:        1,
-    DOOR:        2,   // locked door (closed)
-    DOOR_OPEN:   3,   // open door (passable)
-    KEY:         4,   // collectible key
+    DOOR:        2,   // locked door — yellow (default)
+    DOOR_OPEN:   3,   // open door (passable, all colors share this)
+    KEY:         4,   // collectible key — yellow (default)
     EXIT:        5,   // level exit
     AMMO:        6,   // bomb ammo pickup
     DEMOLITION:  7,   // demolition perk — bombs destroy walls
+    // Colored keys
+    KEY_RED:     8,
+    KEY_BLUE:    9,
+    KEY_GREEN:   10,
+    // Colored doors (locked)
+    DOOR_RED:    11,
+    DOOR_BLUE:   12,
+    DOOR_GREEN:  13,
   };
 
   const TILE_SIZE = 48; // px
@@ -45,24 +53,65 @@ const Tilemap = (() => {
     _grid[row * _cols + col] = type;
   }
 
+  // ── Color helpers ───────────────────────────────────────
+  const _DOOR_COLOR_MAP = {
+    [TILE.DOOR]:       'yellow',
+    [TILE.DOOR_RED]:   'red',
+    [TILE.DOOR_BLUE]:  'blue',
+    [TILE.DOOR_GREEN]: 'green',
+  };
+  const _KEY_COLOR_MAP = {
+    [TILE.KEY]:       'yellow',
+    [TILE.KEY_RED]:   'red',
+    [TILE.KEY_BLUE]:  'blue',
+    [TILE.KEY_GREEN]: 'green',
+  };
+
+  const KEY_HEX_COLOR   = { yellow: '#ffee00', red: '#ff4455', blue: '#4488ff', green: '#44ff88' };
+  const DOOR_FILL_COLOR = { yellow: '#cc5500', red: '#991122', blue: '#113399', green: '#116633' };
+  const DOOR_GLOW_COLOR = { yellow: '#ff8800', red: '#ff4455', blue: '#4488ff', green: '#44ff88' };
+
   function isPassable(col, row) {
     const t = get(col, row);
-    return t === TILE.FLOOR || t === TILE.DOOR_OPEN || t === TILE.KEY || t === TILE.EXIT || t === TILE.AMMO || t === TILE.DEMOLITION;
+    return t === TILE.FLOOR || t === TILE.DOOR_OPEN ||
+           t === TILE.KEY || t === TILE.KEY_RED || t === TILE.KEY_BLUE || t === TILE.KEY_GREEN ||
+           t === TILE.EXIT || t === TILE.AMMO || t === TILE.DEMOLITION;
   }
 
-  function isDoor(col, row)           { return get(col, row) === TILE.DOOR; }
-  function isKey(col, row)            { return get(col, row) === TILE.KEY; }
+  // Returns the color string for a door tile, or null if not a door.
+  function getDoorColor(col, row) {
+    return _DOOR_COLOR_MAP[get(col, row)] || null;
+  }
+
+  // Returns the color string for a key tile, or null if not a key.
+  function getKeyColor(col, row) {
+    return _KEY_COLOR_MAP[get(col, row)] || null;
+  }
+
+  function isDoor(col, row) {
+    return _DOOR_COLOR_MAP[get(col, row)] !== undefined;
+  }
+
+  function isKey(col, row) {
+    return _KEY_COLOR_MAP[get(col, row)] !== undefined;
+  }
+
   function isExit(col, row)           { return get(col, row) === TILE.EXIT; }
   function isAmmo(col, row)           { return get(col, row) === TILE.AMMO; }
   function isDemolitionPerk(col, row) { return get(col, row) === TILE.DEMOLITION; }
 
+  // Open any colored door (all share DOOR_OPEN state).
   function openDoor(col, row) {
-    if (get(col, row) === TILE.DOOR) set(col, row, TILE.DOOR_OPEN);
+    if (_DOOR_COLOR_MAP[get(col, row)] !== undefined) set(col, row, TILE.DOOR_OPEN);
   }
+  // Alias used by player.js
+  const openColoredDoor = openDoor;
 
   function removeKey(col, row) {
-    if (get(col, row) === TILE.KEY) set(col, row, TILE.FLOOR);
+    if (_KEY_COLOR_MAP[get(col, row)] !== undefined) set(col, row, TILE.FLOOR);
   }
+  // Alias used by player.js
+  const removeColoredKey = removeKey;
 
   function removeAmmo(col, row) {
     if (get(col, row) === TILE.AMMO) set(col, row, TILE.FLOOR);
@@ -101,7 +150,7 @@ const Tilemap = (() => {
       const px = ax + (bx - ax) * t;
       const py = ay + (by - ay) * t;
       const tile = get(Math.floor(px / TILE_SIZE), Math.floor(py / TILE_SIZE));
-      if (tile === TILE.WALL || tile === TILE.DOOR) return false;
+      if (tile === TILE.WALL || _DOOR_COLOR_MAP[tile] !== undefined) return false;
     }
     return true;
   }
@@ -153,12 +202,13 @@ const Tilemap = (() => {
 
         if (tile === TILE.WALL) {
           _drawWall(ctx, x, y);
-        } else if (tile === TILE.DOOR) {
-          _drawDoor(ctx, x, y);
-        } else if (tile === TILE.KEY) {
-          ctx.fillStyle = `rgba(255,220,0,${0.04 + _fastBlinkPhase * 0.08})`;
+        } else if (_DOOR_COLOR_MAP[tile] !== undefined) {
+          _drawDoor(ctx, x, y, _DOOR_COLOR_MAP[tile]);
+        } else if (_KEY_COLOR_MAP[tile] !== undefined) {
+          const kc = KEY_HEX_COLOR[_KEY_COLOR_MAP[tile]];
+          ctx.fillStyle = `rgba(${_hexToRgb(kc)},${0.04 + _fastBlinkPhase * 0.08})`;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-          _drawKey(ctx, x, y);
+          _drawKey(ctx, x, y, _KEY_COLOR_MAP[tile]);
         } else if (tile === TILE.EXIT) {
           ctx.fillStyle = `rgba(0,255,204,${0.04 + _fastBlinkPhase * 0.08})`;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
@@ -411,35 +461,51 @@ const Tilemap = (() => {
   }
 
   // ── Door ─────────────────────────────────────────────────
-  function _drawDoor(ctx, x, y) {
+  function _drawDoor(ctx, x, y, color) {
     const s     = TILE_SIZE;
     const blink = _blinkPhase;
-    ctx.fillStyle = `rgba(255,136,0,${0.7 + blink * 0.3})`;
+    const col   = color || 'yellow';
+    const fill  = DOOR_FILL_COLOR[col] || '#cc5500';
+    const glow  = DOOR_GLOW_COLOR[col] || '#ff8800';
+
+    ctx.fillStyle = fill;
     ctx.fillRect(x + 3, y + 3, s - 6, s - 6);
     ctx.fillStyle = '#0d0d1f';
     for (let i = 1; i < 4; i++) {
       ctx.fillRect(x + 6, y + (s / 4) * i - 1, s - 12, 2);
     }
+    const glowAlpha = 0.6 + blink * 0.4;
     ctx.shadowBlur   = 10 * blink;
-    ctx.shadowColor  = '#ff8800';
-    ctx.strokeStyle  = `rgba(255,180,0,${0.6 + blink * 0.4})`;
+    ctx.shadowColor  = glow;
+    ctx.strokeStyle  = `rgba(${_hexToRgb(glow)},${glowAlpha})`;
     ctx.lineWidth    = 2;
     ctx.strokeRect(x + 4, y + 4, s - 8, s - 8);
     ctx.shadowBlur   = 0;
+
+    // Color indicator dot
+    ctx.fillStyle = glow;
+    ctx.shadowBlur  = 6 + blink * 8;
+    ctx.shadowColor = glow;
+    ctx.beginPath();
+    ctx.arc(x + s / 2, y + s / 2 - 6, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   // ── Key ──────────────────────────────────────────────────
-  function _drawKey(ctx, x, y) {
+  function _drawKey(ctx, x, y, color) {
     const cx    = x + TILE_SIZE / 2;
     const cy    = y + TILE_SIZE / 2;
     const blink = _fastBlinkPhase;
     const glow  = 8 + blink * 12;
+    const col   = color || 'yellow';
+    const kc    = KEY_HEX_COLOR[col] || '#ffee00';
 
     ctx.save();
     ctx.shadowBlur  = glow;
-    ctx.shadowColor = '#ffee00';
+    ctx.shadowColor = kc;
 
-    ctx.strokeStyle = `rgba(255,238,0,${0.8 + blink * 0.2})`;
+    ctx.strokeStyle = `rgba(${_hexToRgb(kc)},${0.8 + blink * 0.2})`;
     ctx.lineWidth   = 3;
     ctx.beginPath();
     ctx.arc(cx - 6, cy, 8, 0, Math.PI * 2);
@@ -458,6 +524,14 @@ const Tilemap = (() => {
     ctx.stroke();
 
     ctx.restore();
+  }
+
+  // ── Hex color to "r,g,b" string for rgba() use ──────────
+  function _hexToRgb(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `${r},${g},${b}`;
   }
 
   // ── Exit ─────────────────────────────────────────────────
@@ -584,11 +658,12 @@ const Tilemap = (() => {
   }
 
   return {
-    TILE, TILE_SIZE,
+    TILE, TILE_SIZE, KEY_HEX_COLOR, DOOR_GLOW_COLOR,
     init, get, set,
     setTheme, getTheme,
     isPassable, isDoor, isKey, isExit, isAmmo, isDemolitionPerk,
-    openDoor, removeKey, removeAmmo, removeDemolitionPerk,
+    getDoorColor, getKeyColor,
+    openDoor, openColoredDoor, removeKey, removeColoredKey, removeAmmo, removeDemolitionPerk,
     destroyAdjacentWalls,
     startDoorOpenEffect,
     pixelWidth, pixelHeight, cols, rows,

@@ -155,7 +155,7 @@ const Game = (() => {
     _camY = Player.getPy() - VIEWPORT_H / 2;
 
     _totalKeysCollected = 0;
-    UI.setHUD(index + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
+    UI.setHUD(index + 1, Levels.count(), Player.getColorKeys(), Player.getBombAmmo(), _totalKeysCollected);
 
     return true;
   }
@@ -179,10 +179,10 @@ const Game = (() => {
     _holdTimer = 0;
   }
 
-  function _onKeyCollect() {
+  function _onKeyCollect(col, row, keyColor) {
     _totalKeysCollected++;
-    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
-    UI.flashKeyCollect();
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getColorKeys(), Player.getBombAmmo(), _totalKeysCollected);
+    UI.flashKeyCollect(keyColor);
     Sound.keyPickup();
   }
 
@@ -190,7 +190,7 @@ const Game = (() => {
   let _bombPlaceFlash = 0;
 
   function _onAmmoCollect() {
-    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getColorKeys(), Player.getBombAmmo(), _totalKeysCollected);
     UI.flashAmmoCollect();
   }
 
@@ -362,7 +362,7 @@ const Game = (() => {
       BombManager.placeBomb(Player.getPx(), Player.getPy());
       Sound.bombPlace();
       _bombPlaceFlash = 0.12;
-      UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
+      UI.setHUD(_currentLevel + 1, Levels.count(), Player.getColorKeys(), Player.getBombAmmo(), _totalKeysCollected);
     }
 
     // Advance player movement animation and process tile events
@@ -442,7 +442,7 @@ const Game = (() => {
     // HUD
     UI.update(rawDt);
     UI.updateMinimap(rawDt);
-    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getKeys(), Player.getBombAmmo(), _totalKeysCollected);
+    UI.setHUD(_currentLevel + 1, Levels.count(), Player.getColorKeys(), Player.getBombAmmo(), _totalKeysCollected);
   }
 
   function _render() {
@@ -505,109 +505,117 @@ const Game = (() => {
   }
 
   // ── Key randomisation ────────────────────────────────────
-  // Returns a copy of def.map with key tiles shuffled to random floor positions
-  // inside the zone the player can access without collecting any keys (below all
-  // door rows). A BFS from the player start ensures every candidate is reachable.
-  // Keys are biased toward dead-end tiles (corridors with only one exit) to
-  // encourage exploration of side paths rather than obvious open spaces.
-  // If fewer candidates than keys exist the original layout is used as fallback.
+  // Redistributes colored key tiles to better dead-end positions within
+  // their designated zones.  Each colored key must stay in the zone
+  // directly below its matching door (preserving the puzzle order).
+  //   Yellow key → main zone (below all doors)
+  //   Red key    → zone between door 1 and door 0 (from player perspective)
+  //   Blue key   → zone between door 2 and door 1
+  //   Green key  → zone between door 3 and door 2
   function _randomizeKeyPositions(def) {
     const { cols, rows, playerStart, map } = def;
-    // minKeyDist comes from the level config and is forwarded through MapGen's
-    // return value so that key placement tightens with each sector.
     const minKeyDist = def.minKeyDist ?? 6;
     const T  = Tilemap.TILE;
     const grid = map.slice();
 
-    // Locate the highest-indexed door row (= last barrier above the player zone)
-    let lastDoorRow = 0;
-    findLastDoorRow: for (let r = rows - 1; r >= 0; r--) {
+    // Collect all door tile rows
+    const allDoorRows = [];
+    for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        if (grid[r * cols + c] === T.DOOR) { lastDoorRow = r; break findLastDoorRow; }
-      }
-    }
-
-    // Count keys and clear them so the BFS sees plain floor
-    let keyCount = 0;
-    for (let i = 0; i < grid.length; i++) {
-      if (grid[i] === T.KEY) { keyCount++; grid[i] = T.FLOOR; }
-    }
-
-    // BFS from player start — doors are impassable (player has no key yet)
-    const startIdx = playerStart.row * cols + playerStart.col;
-    const reachable = new Set([startIdx]);
-    const queue = [startIdx];
-    const passable = new Set([T.FLOOR, T.DOOR_OPEN, T.EXIT, T.AMMO, T.DEMOLITION]);
-    while (queue.length > 0) {
-      const idx = queue.shift();
-      const c   = idx % cols;
-      const r   = Math.floor(idx / cols);
-      for (const [dc, dr] of [[0,-1],[0,1],[-1,0],[1,0]]) {
-        const nc = c + dc, nr = r + dr;
-        if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
-        const ni = nr * cols + nc;
-        if (reachable.has(ni)) continue;
-        if (passable.has(grid[ni])) { reachable.add(ni); queue.push(ni); }
-      }
-    }
-
-    // Collect candidate positions: reachable floor in the accessible zone,
-    // not the player tile, not too close to start, and not an ammo/perk tile.
-    // Also compute a "deadness" score: number of wall neighbours (higher = more
-    // dead-end-like).  Keys are placed preferentially in dead ends so the player
-    // is rewarded for exploring side paths rather than staying on open highways.
-    const candidates = [];
-    for (let r = lastDoorRow + 1; r < rows - 1; r++) {
-      for (let c = 1; c < cols - 1; c++) {
-        const idx = r * cols + c;
-        if (!reachable.has(idx)) continue;
-        if (grid[idx] !== T.FLOOR) continue;
-        if (idx === startIdx) continue;
-        const manhattanDist = Math.abs(r - playerStart.row) + Math.abs(c - playerStart.col);
-        if (manhattanDist < minKeyDist) continue;
-
-        // Count wall neighbours to score how "dead-end-like" this tile is
-        let wallNeighbours = 0;
-        for (const [dc, dr] of [[0,-1],[0,1],[-1,0],[1,0]]) {
-          const nc = c + dc, nr = r + dr;
-          if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) { wallNeighbours++; continue; }
-          if (grid[nr * cols + nc] === T.WALL) wallNeighbours++;
+        const t = grid[r * cols + c];
+        if (T.DOOR === t || T.DOOR_RED === t || T.DOOR_BLUE === t || T.DOOR_GREEN === t) {
+          if (!allDoorRows.includes(r)) allDoorRows.push(r);
+          break;
         }
-        candidates.push({ idx, wallNeighbours, manhattanDist });
+      }
+    }
+    allDoorRows.sort((a, b) => a - b); // top-to-bottom
+    const n = allDoorRows.length;
+    if (n === 0) return grid;
+
+    // Zone boundary helper (zone 0 = main zone below last door)
+    function getZoneRange(zoneIdx) {
+      if (zoneIdx === 0) return [allDoorRows[n - 1] + 1, rows - 2];
+      const uo = n - 1 - zoneIdx;
+      const lo = n - zoneIdx;
+      if (uo < 0 || lo >= n) return null;
+      return [allDoorRows[uo] + 1, allDoorRows[lo] - 1];
+    }
+
+    // Colored key specs: [tile, zone index]
+    const KEY_SPECS = [
+      { tile: T.KEY,       zoneIdx: 0 },
+      { tile: T.KEY_RED,   zoneIdx: 1 },
+      { tile: T.KEY_BLUE,  zoneIdx: 2 },
+      { tile: T.KEY_GREEN, zoneIdx: 3 },
+    ];
+
+    // Count and clear each colored key type
+    const keyCounts = {};
+    for (const { tile } of KEY_SPECS) keyCounts[tile] = 0;
+    for (let i = 0; i < grid.length; i++) {
+      if (keyCounts[grid[i]] !== undefined) {
+        keyCounts[grid[i]]++;
+        grid[i] = T.FLOOR;
       }
     }
 
-    if (candidates.length < keyCount) {
-      // Not enough space — restore original layout
-      return map.slice();
-    }
+    // Redistribute each color within its zone using dead-end biasing
+    for (const { tile, zoneIdx } of KEY_SPECS) {
+      const count = keyCounts[tile] || 0;
+      if (count === 0) continue;
 
-    // Sort: prefer tiles with more wall neighbours (dead ends) and farther
-    // from the player start.  This biases keys into side pockets and corners.
-    candidates.sort((a, b) =>
-      b.wallNeighbours - a.wallNeighbours ||
-      b.manhattanDist  - a.manhattanDist
-    );
+      const range = getZoneRange(zoneIdx);
+      if (!range) continue;
+      const [r1, r2] = range;
 
-    // Place keys, enforcing a minimum Manhattan spread of 4 tiles between them.
-    // We iterate the sorted list so the best spots (dead ends far from start)
-    // are tried first.
-    const placed = [];
-    for (const { idx } of candidates) {
-      if (placed.length >= keyCount) break;
-      const c = idx % cols;
-      const r = Math.floor(idx / cols);
-      const tooClose = placed.some(pi => {
-        const pc = pi % cols, pr = Math.floor(pi / cols);
-        return Math.abs(c - pc) + Math.abs(r - pr) < 4;
-      });
-      if (!tooClose) { placed.push(idx); grid[idx] = T.KEY; }
-    }
+      const candidates = [];
+      for (let r = r1; r <= r2; r++) {
+        for (let c = 1; c < cols - 1; c++) {
+          const idx = r * cols + c;
+          if (grid[idx] !== T.FLOOR) continue;
+          const mDist = Math.abs(r - playerStart.row) + Math.abs(c - playerStart.col);
+          if (zoneIdx === 0 && mDist < minKeyDist) continue;
 
-    // Relax spread constraint if not enough keys placed
-    for (const { idx } of candidates) {
-      if (placed.length >= keyCount) break;
-      if (!placed.includes(idx)) { placed.push(idx); grid[idx] = T.KEY; }
+          let wallN = 0;
+          for (const [dc, dr] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+            const nc = c + dc, nr = r + dr;
+            if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) { wallN++; continue; }
+            if (grid[nr * cols + nc] === T.WALL) wallN++;
+          }
+          candidates.push({ idx, wallN, mDist });
+        }
+      }
+
+      if (candidates.length === 0) {
+        // Fallback: place anywhere in the zone
+        for (let r = r1; r <= r2 && count > 0; r++) {
+          for (let c = 1; c < cols - 1; c++) {
+            const idx = r * cols + c;
+            if (grid[idx] === T.FLOOR) { grid[idx] = tile; break; }
+          }
+        }
+        continue;
+      }
+
+      candidates.sort((a, b) => b.wallN - a.wallN || b.mDist - a.mDist);
+
+      const placed = [];
+      for (const { idx } of candidates) {
+        if (placed.length >= count) break;
+        const c = idx % cols;
+        const r = Math.floor(idx / cols);
+        const tooClose = placed.some(pi => {
+          const pc = pi % cols, pr = Math.floor(pi / cols);
+          return Math.abs(c - pc) + Math.abs(r - pr) < 4;
+        });
+        if (!tooClose) { placed.push(idx); grid[idx] = tile; }
+      }
+      // Relax spread constraint if needed
+      for (const { idx } of candidates) {
+        if (placed.length >= count) break;
+        if (!placed.includes(idx)) { placed.push(idx); grid[idx] = tile; }
+      }
     }
 
     return grid;

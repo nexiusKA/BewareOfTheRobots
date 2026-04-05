@@ -24,8 +24,8 @@ const Player = (() => {
   let _startPx = 0;
   let _startPy = 0;
 
-  // Keys held
-  let _keys = 0;
+  // Keys held per color
+  let _colorKeys = { yellow: 0, red: 0, blue: 0, green: 0 };
 
   // Bomb ammo
   const MAX_BOMB_AMMO = 5;
@@ -60,7 +60,7 @@ const Player = (() => {
     _ty = _py;
     _moving = false;
     _moveTimer = 0;
-    _keys = 0;
+    _colorKeys = { yellow: 0, red: 0, blue: 0, green: 0 };
     _bombAmmo = Utils.clamp(startBombs || 0, 0, MAX_BOMB_AMMO);
     _facing = 0;
     _bobTimer = 0;
@@ -71,7 +71,9 @@ const Player = (() => {
     _demoParticles = [];
   }
 
-  function getKeys()     { return _keys; }
+  function getKeys()       { return _colorKeys.yellow; } // legacy (yellow only)
+  function getColorKeys()  { return Object.assign({}, _colorKeys); }
+  function getTotalKeys()  { return Object.values(_colorKeys).reduce((a, b) => a + b, 0); }
   function getCol()      { return _col; }
   function getRow()      { return _row; }
   function getPx()       { return _px; }
@@ -101,10 +103,11 @@ const Player = (() => {
       // Ghost mode: only block movement at map boundaries
       if (nc < 0 || nr < 0 || nc >= Tilemap.cols() || nr >= Tilemap.rows()) return;
     } else {
-      if (Tilemap.isDoor(nc, nr)) {
-        if (_keys > 0) {
-          _keys--;
-          Tilemap.openDoor(nc, nr);
+      const doorColor = Tilemap.getDoorColor(nc, nr);
+      if (doorColor !== null) {
+        if ((_colorKeys[doorColor] || 0) > 0) {
+          _colorKeys[doorColor]--;
+          Tilemap.openColoredDoor(nc, nr);
           if (onOpenDoor) onOpenDoor(nc, nr);
         }
         return; // door blocks movement regardless
@@ -144,8 +147,10 @@ const Player = (() => {
     }
   }
 
-  function _spawnKeyParticles(px, py) {
-    const colors = ['#ffee00', '#ffffff', '#ffe880', '#ffcc00', '#fffacd'];
+  function _spawnKeyParticles(px, py, color) {
+    const c = color || 'yellow';
+    const base = Tilemap.KEY_HEX_COLOR[c] || '#ffee00';
+    const colors = [base, '#ffffff', base, '#fffacd', '#ffffff'];
     for (let i = 0; i < 24; i++) {
       const angle = (i / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
       const speed = 50 + Math.random() * 100;
@@ -158,6 +163,7 @@ const Player = (() => {
         maxLife: life,
         size: 3 + Math.random() * 4,
         color: colors[Math.floor(Math.random() * colors.length)],
+        glow: base,
       });
     }
   }
@@ -263,11 +269,12 @@ const Player = (() => {
         _moving = false;
 
         // Check tile events after arriving
-        if (Tilemap.isKey(_col, _row)) {
-          _keys++;
-          Tilemap.removeKey(_col, _row);
-          _spawnKeyParticles(_tx, _ty);
-          if (onCollect) onCollect(_col, _row);
+        const keyColor = Tilemap.getKeyColor(_col, _row);
+        if (keyColor !== null) {
+          _colorKeys[keyColor] = (_colorKeys[keyColor] || 0) + 1;
+          Tilemap.removeColoredKey(_col, _row);
+          _spawnKeyParticles(_tx, _ty, keyColor);
+          if (onCollect) onCollect(_col, _row, keyColor);
         }
         if (Tilemap.isAmmo(_col, _row)) {
           addBombAmmo(2);
@@ -304,7 +311,7 @@ const Player = (() => {
         const alpha = p.life / p.maxLife;
         ctx.globalAlpha = alpha;
         ctx.shadowBlur = 8;
-        ctx.shadowColor = '#ffee00';
+        ctx.shadowColor = p.glow || '#ffee00';
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * (0.4 + alpha * 0.6), 0, Math.PI * 2);
@@ -416,7 +423,8 @@ const Player = (() => {
   return {
     init, update, draw,
     tryMove, isMoving,
-    getKeys, getCol, getRow, getPx, getPy,
+    getKeys, getColorKeys, getTotalKeys,
+    getCol, getRow, getPx, getPy,
     getBombAmmo, addBombAmmo, useBomb,
     setGhostMode, isGhostMode,
     hasDemolition, consumeDemolition

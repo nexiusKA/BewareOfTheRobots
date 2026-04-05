@@ -45,7 +45,8 @@ const UI = (() => {
 
       '<div class="start-section">' +
         '<div class="start-section-header">🎯 OBJECTIVE</div>' +
-        '<div class="start-feat-row">🔑 Collect <b>KEYS</b> to unlock 🚪 <b>DOORS</b> and reach the <b>EXIT ▶</b></div>' +
+        '<div class="start-feat-row">🔑 Collect <b>COLORED KEYS</b> to unlock matching 🚪 <b>DOORS</b> — find each key in the zone behind its door</div>' +
+        '<div class="start-feat-row">💡 <b>Route planning</b>: grab the yellow key first, then unlock zones for red, blue, green keys</div>' +
         '<div class="start-feat-row">💣 Place <b>BOMBS</b> <small>[Space]</small> — 1.2s fuse, blast clears enemies permanently</div>' +
         '<div class="start-feat-row">◆ Grab <b>AMMO</b> crates scattered across each sector for extra charges</div>' +
       '</div>' +
@@ -66,6 +67,9 @@ const UI = (() => {
         '<div class="start-enemy start-patrol">🟠 <b>PATROL</b> — Standard guard, fixed route, amber forward cone</div>' +
         '<div class="start-enemy start-scanner">🔵 <b>SCANNER</b> — Slow but sweeps a wide ±60° cone unpredictably</div>' +
         '<div class="start-enemy start-hunter">🔴 <b>HUNTER</b> — Fast pursuit, razor-thin laser beam, long range</div>' +
+        '<div class="start-enemy start-sniffer">🟢 <b>SNIFFER</b> — Detects by radius; walls won\'t help you hide</div>' +
+        '<div class="start-enemy start-fast">🟡 <b>FAST</b> — Blinding speed, short range — react before it turns</div>' +
+        '<div class="start-enemy start-heavy">⬜ <b>HEAVY</b> — Armored; staggered by one bomb, destroyed by two</div>' +
       '</div>' +
 
       '<div class="start-controls-hint">🕹️ WASD / ↑↓←→ Move &nbsp;•&nbsp; Space Bomb &nbsp;•&nbsp; R Restart &nbsp;•&nbsp; I Info</div>' +
@@ -167,22 +171,40 @@ const UI = (() => {
   let _fogEnabled = false;
   let _ghostEnabled = false;
   let _debugEnabled = false;
+  let _lastKeyFlashColor = 'yellow';
+
+  function _hexToRgbStr(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `${r},${g},${b}`;
+  }
 
   function setFogMode(enabled)   { _fogEnabled = enabled; }
   function setGhostMode(enabled) { _ghostEnabled = enabled; }
   function setDebugMode(enabled) { _debugEnabled = enabled; }
 
-  function setHUD(level, totalLevels, keys, bombs, totalKeys) {
+  let _hudColorKeys = { yellow: 0, red: 0, blue: 0, green: 0 };
+
+  function setHUD(level, totalLevels, colorKeys, bombs, totalKeys) {
     _hudLevel = level;
     _hudTotalLevels = totalLevels;
-    _hudKeyCount = keys;
-    _hudBombs = bombs !== undefined ? bombs : 0;
+    // Accept either an object {yellow,red,blue,green} or a legacy integer
+    if (colorKeys && typeof colorKeys === 'object') {
+      _hudColorKeys = colorKeys;
+      _hudKeyCount  = Object.values(colorKeys).reduce((a, b) => a + b, 0);
+    } else {
+      _hudColorKeys = { yellow: colorKeys || 0, red: 0, blue: 0, green: 0 };
+      _hudKeyCount  = colorKeys || 0;
+    }
+    _hudBombs    = bombs    !== undefined ? bombs    : 0;
     _hudTotalKeys = totalKeys !== undefined ? totalKeys : _hudTotalKeys;
   }
 
-  function flashKeyCollect() {
+  function flashKeyCollect(color) {
     _hudFlash    = 0.5;
     _keyPopTimer = POP_DURATION;
+    _lastKeyFlashColor = color || 'yellow';
   }
 
   function flashAmmoCollect() {
@@ -242,31 +264,66 @@ const UI = (() => {
       ctx.font      = 'bold 13px Courier New';
     }
 
-    // Keys — flash yellow on collect + scale-pop animation
-    const keyColor = _hudFlash > 0
-      ? `rgba(255,238,0,${0.6 + (_hudFlash / 0.5) * 0.4})`
-      : '#ffee00';
-    ctx.fillStyle   = keyColor;
-    ctx.shadowColor = keyColor;
-    ctx.shadowBlur  = 6;
-    ctx.textAlign   = 'center';
-    const centerX   = canvasW / 2;
-    ctx.font        = 'bold 13px Courier New';
-    {
-      const keyTx = centerX - 50, keyTy = y0 + barH / 2 - 5;
-      const keyPop = _keyPopTimer > 0
-        ? 1 + Math.sin((_keyPopTimer / POP_DURATION) * Math.PI) * 0.25
-        : 1;
+    // Colored key inventory — chips for each key color
+    const KEY_COLORS = [
+      { color: '#ffee00', shadowC: '#ffcc00', name: 'yellow' },
+      { color: '#ff4455', shadowC: '#cc0022', name: 'red'    },
+      { color: '#4488ff', shadowC: '#2255cc', name: 'blue'   },
+      { color: '#44ff88', shadowC: '#00cc55', name: 'green'  },
+    ];
+    const chipW = 38, chipH = 16, chipGap = 6;
+    const totalChipW = KEY_COLORS.length * (chipW + chipGap) - chipGap;
+    let chipX = canvasW / 2 - totalChipW / 2;
+    const chipY = y0 + (barH - chipH) / 2;
+
+    ctx.font = 'bold 10px Courier New';
+    for (const { color, shadowC, name } of KEY_COLORS) {
+      const count = _hudColorKeys[name] || 0;
+      const flash = (name === 'yellow' || name === _lastKeyFlashColor) && _hudFlash > 0;
+      const alpha = count > 0 ? 1 : 0.28;
+
       ctx.save();
-      ctx.translate(keyTx, keyTy);
-      ctx.scale(keyPop, keyPop);
-      ctx.fillText(`KEY ${_hudKeyCount > 0 ? '⬡'.repeat(_hudKeyCount) : '—'}`, 0, 0);
+      ctx.globalAlpha = alpha;
+
+      // Chip background
+      ctx.shadowBlur  = count > 0 ? 8 : 0;
+      ctx.shadowColor = shadowC;
+      ctx.fillStyle   = count > 0
+        ? (flash ? `rgba(${_hexToRgbStr(color)},${0.55 + (_hudFlash / 0.5) * 0.35})` : color + '55')
+        : 'rgba(40,40,60,0.7)';
+      ctx.beginPath();
+      ctx.roundRect(chipX, chipY, chipW, chipH, 3);
+      ctx.fill();
+
+      // Chip border
+      ctx.strokeStyle = count > 0 ? color : 'rgba(80,80,100,0.5)';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(chipX, chipY, chipW, chipH, 3);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Key icon + count
+      ctx.fillStyle = count > 0 ? color : 'rgba(120,120,140,0.6)';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      const popScale = (flash && _keyPopTimer > 0)
+        ? 1 + Math.sin((_keyPopTimer / 0.25) * Math.PI) * 0.2
+        : 1;
+      ctx.translate(chipX + chipW / 2, chipY + chipH / 2);
+      ctx.scale(popScale, popScale);
+      ctx.fillText(`⬡ ${count}`, 0, 0);
       ctx.restore();
+
+      chipX += chipW + chipGap;
     }
-    ctx.font        = '10px Courier New';
+
+    ctx.font        = 'bold 13px Courier New';
     ctx.shadowBlur  = 0;
-    ctx.fillStyle   = `${keyColor}99`;
-    ctx.fillText(`${_hudTotalKeys} PICKED UP`, centerX - 50, y0 + barH / 2 + 9);
+    ctx.textAlign   = 'center';
+    ctx.font        = '9px Courier New';
+    ctx.fillStyle   = `${accent}70`;
+    ctx.fillText(`${_hudTotalKeys} KEYS FOUND`, canvasW / 2, y0 + barH / 2 + 10);
     ctx.font        = 'bold 13px Courier New';
 
     // Bombs — flash green on collect + scale-pop animation
@@ -278,7 +335,7 @@ const UI = (() => {
     ctx.shadowBlur  = 6;
     const bombDots  = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
     {
-      const bombTx = centerX + 60, bombTy = y0 + barH / 2;
+      const bombTx = canvasW / 2 + 130, bombTy = y0 + barH / 2;
       const bombPop = _ammoPopTimer > 0
         ? 1 + Math.sin((_ammoPopTimer / POP_DURATION) * Math.PI) * 0.25
         : 1;
@@ -440,9 +497,21 @@ const UI = (() => {
         } else if (tile === T.FLOOR || tile === T.DOOR_OPEN) {
           ctx.fillStyle = fc;
         } else if (tile === T.DOOR) {
-          ctx.fillStyle = '#ff8800';
+          ctx.fillStyle = '#cc8800';
+        } else if (tile === T.DOOR_RED) {
+          ctx.fillStyle = '#cc2233';
+        } else if (tile === T.DOOR_BLUE) {
+          ctx.fillStyle = '#2255cc';
+        } else if (tile === T.DOOR_GREEN) {
+          ctx.fillStyle = '#226633';
         } else if (tile === T.KEY) {
           ctx.fillStyle = debugMode ? '#ffee00' : fc;
+        } else if (tile === T.KEY_RED) {
+          ctx.fillStyle = debugMode ? '#ff4455' : fc;
+        } else if (tile === T.KEY_BLUE) {
+          ctx.fillStyle = debugMode ? '#4488ff' : fc;
+        } else if (tile === T.KEY_GREEN) {
+          ctx.fillStyle = debugMode ? '#44ff88' : fc;
         } else if (tile === T.EXIT) {
           ctx.fillStyle = accent;
         } else if (tile === T.AMMO) {
