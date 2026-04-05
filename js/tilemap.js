@@ -156,15 +156,15 @@ const Tilemap = (() => {
         } else if (tile === TILE.DOOR) {
           _drawDoor(ctx, x, y);
         } else if (tile === TILE.KEY) {
-          ctx.fillStyle = `rgba(250,204,21,${0.04 + _fastBlinkPhase * 0.09})`;
+          ctx.fillStyle = `rgba(255,220,0,${0.04 + _fastBlinkPhase * 0.08})`;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawKey(ctx, x, y);
         } else if (tile === TILE.EXIT) {
-          ctx.fillStyle = `rgba(167,139,250,${0.05 + _fastBlinkPhase * 0.10})`;
+          ctx.fillStyle = `rgba(0,255,204,${0.04 + _fastBlinkPhase * 0.08})`;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawExit(ctx, x, y);
         } else if (tile === TILE.AMMO) {
-          ctx.fillStyle = `rgba(74,222,128,${0.04 + _fastBlinkPhase * 0.08})`;
+          ctx.fillStyle = `rgba(0,255,136,${0.03 + _fastBlinkPhase * 0.07})`;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawAmmo(ctx, x, y);
         } else if (tile === TILE.DEMOLITION) {
@@ -244,7 +244,7 @@ const Tilemap = (() => {
       case Themes.FX.CIRCUITS: {
         // Cyan circuit traces — thin L-shaped lines
         ctx.save();
-        ctx.strokeStyle = `rgba(34,211,238,${0.16 + bp * 0.12})`;
+        ctx.strokeStyle = `rgba(0,200,255,${0.18 + bp * 0.12})`;
         ctx.lineWidth   = 1;
         // Deterministic pattern from tile position
         const hx = ((x * 17 + y * 31) & 255) / 255;
@@ -255,7 +255,7 @@ const Tilemap = (() => {
           ctx.lineTo(x + 20, y + 10);
           ctx.stroke();
           // small dot node
-          ctx.fillStyle = `rgba(34,211,238,${0.38 + bp * 0.28})`;
+          ctx.fillStyle = `rgba(0,220,255,${0.4 + bp * 0.3})`;
           ctx.fillRect(x + 19, y + 9, 3, 3);
         } else {
           ctx.beginPath();
@@ -263,7 +263,7 @@ const Tilemap = (() => {
           ctx.lineTo(x + s - 20, y + s / 2);
           ctx.lineTo(x + s - 20, y + s - 10);
           ctx.stroke();
-          ctx.fillStyle = `rgba(34,211,238,${0.38 + bp * 0.28})`;
+          ctx.fillStyle = `rgba(0,220,255,${0.4 + bp * 0.3})`;
           ctx.fillRect(x + s - 22, y + s - 11, 3, 3);
         }
         ctx.restore();
@@ -416,7 +416,7 @@ const Tilemap = (() => {
     const blink = _blinkPhase;
     ctx.fillStyle = `rgba(255,136,0,${0.7 + blink * 0.3})`;
     ctx.fillRect(x + 3, y + 3, s - 6, s - 6);
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = '#0d0d1f';
     for (let i = 1; i < 4; i++) {
       ctx.fillRect(x + 6, y + (s / 4) * i - 1, s - 12, 2);
     }
@@ -433,13 +433,13 @@ const Tilemap = (() => {
     const cx    = x + TILE_SIZE / 2;
     const cy    = y + TILE_SIZE / 2;
     const blink = _fastBlinkPhase;
-    const glow  = 10 + blink * 14;
+    const glow  = 8 + blink * 12;
 
     ctx.save();
     ctx.shadowBlur  = glow;
-    ctx.shadowColor = '#FACC15';
+    ctx.shadowColor = '#ffee00';
 
-    ctx.strokeStyle = `rgba(250,204,21,${0.8 + blink * 0.2})`;
+    ctx.strokeStyle = `rgba(255,238,0,${0.8 + blink * 0.2})`;
     ctx.lineWidth   = 3;
     ctx.beginPath();
     ctx.arc(cx - 6, cy, 8, 0, Math.PI * 2);
@@ -464,17 +464,17 @@ const Tilemap = (() => {
   function _drawExit(ctx, x, y) {
     const s     = TILE_SIZE;
     const blink = _fastBlinkPhase;
-    const glow  = 12 + blink * 14;
+    const glow  = 10 + blink * 12;
     ctx.save();
     ctx.shadowBlur  = glow;
-    ctx.shadowColor = '#A78BFA';
+    ctx.shadowColor = '#00ffcc';
 
-    ctx.strokeStyle = `rgba(167,139,250,${0.6 + blink * 0.4})`;
+    ctx.strokeStyle = `rgba(0,255,204,${0.6 + blink * 0.4})`;
     ctx.lineWidth   = 2;
     ctx.strokeRect(x + 4, y + 4, s - 8, s - 8);
 
     const cx = x + s / 2, cy = y + s / 2;
-    ctx.fillStyle = `rgba(167,139,250,${0.55 + blink * 0.4})`;
+    ctx.fillStyle = `rgba(0,255,204,${0.5 + blink * 0.4})`;
     ctx.beginPath();
     ctx.moveTo(cx - 8, cy - 8);
     ctx.lineTo(cx + 8, cy);
@@ -548,24 +548,24 @@ const Tilemap = (() => {
     const cx    = x + TILE_SIZE / 2;
     const cy    = y + TILE_SIZE / 2;
     const blink = _blinkPhase;
-    const glow  = 8 + blink * 10;
+    const glow  = 6 + blink * 8;
 
     ctx.save();
     ctx.shadowBlur  = glow;
-    ctx.shadowColor = '#4ADE80';
+    ctx.shadowColor = '#00ff88';
 
-    ctx.strokeStyle = `rgba(74,222,128,${0.8 + blink * 0.2})`;
+    ctx.strokeStyle = `rgba(0,255,136,${0.8 + blink * 0.2})`;
     ctx.lineWidth   = 2.5;
     ctx.beginPath();
     ctx.arc(cx, cy + 2, 9, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = `rgba(74,222,128,${0.22 + blink * 0.13})`;
+    ctx.fillStyle = `rgba(0,200,100,${0.25 + blink * 0.15})`;
     ctx.beginPath();
     ctx.arc(cx, cy + 2, 9, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = `rgba(74,222,128,${0.7 + blink * 0.3})`;
+    ctx.strokeStyle = `rgba(0,255,136,${0.7 + blink * 0.3})`;
     ctx.lineWidth   = 2;
     ctx.beginPath();
     ctx.moveTo(cx,     cy - 7);
@@ -573,8 +573,8 @@ const Tilemap = (() => {
     ctx.lineTo(cx + 5, cy - 16);
     ctx.stroke();
 
-    ctx.fillStyle   = `rgba(250,204,21,${0.6 + blink * 0.4})`;
-    ctx.shadowColor = '#FACC15';
+    ctx.fillStyle   = `rgba(255,255,100,${0.6 + blink * 0.4})`;
+    ctx.shadowColor = '#ffff44';
     ctx.shadowBlur  = 5 + blink * 5;
     ctx.beginPath();
     ctx.arc(cx + 5, cy - 16, 2.5, 0, Math.PI * 2);

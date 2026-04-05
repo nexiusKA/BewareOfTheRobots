@@ -145,7 +145,7 @@ const Player = (() => {
   }
 
   function _spawnKeyParticles(px, py) {
-    const colors = ['#FACC15', '#ffffff', '#FDE68A', '#FCD34D', '#FFFBEB'];
+    const colors = ['#ffee00', '#ffffff', '#ffe880', '#ffcc00', '#fffacd'];
     for (let i = 0; i < 24; i++) {
       const angle = (i / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
       const speed = 50 + Math.random() * 100;
@@ -163,7 +163,7 @@ const Player = (() => {
   }
 
   function _spawnAmmoParticles(px, py) {
-    const colors = ['#4ADE80', '#ffffff', '#86EFAC', '#22C55E', '#DCFCE7'];
+    const colors = ['#00ff88', '#ffffff', '#44ffaa', '#00cc66', '#ccffee'];
     for (let i = 0; i < 20; i++) {
       const angle = (i / 20) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
       const speed = 45 + Math.random() * 85;
@@ -291,7 +291,7 @@ const Player = (() => {
     // Step particles
     for (const p of _stepParticles) {
       const alpha = p.life / p.maxLife;
-      ctx.fillStyle = `rgba(34,211,238,${alpha * 0.6})`;
+      ctx.fillStyle = `rgba(0,200,255,${alpha * 0.6})`;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
       ctx.fill();
@@ -304,7 +304,7 @@ const Player = (() => {
         const alpha = p.life / p.maxLife;
         ctx.globalAlpha = alpha;
         ctx.shadowBlur = 8;
-        ctx.shadowColor = '#FACC15';
+        ctx.shadowColor = '#ffee00';
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * (0.4 + alpha * 0.6), 0, Math.PI * 2);
@@ -322,7 +322,7 @@ const Player = (() => {
         const alpha = p.life / p.maxLife;
         ctx.globalAlpha = alpha;
         ctx.shadowBlur = 7;
-        ctx.shadowColor = '#4ADE80';
+        ctx.shadowColor = '#00ff88';
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * (0.4 + alpha * 0.6), 0, Math.PI * 2);
@@ -361,36 +361,36 @@ const Player = (() => {
     ctx.rotate(_facing);
 
     // Glow
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#22D3EE';
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#00ccff';
 
     // Demolition-perk active ring (orange pulsing outer ring)
     if (_hasDemolition) {
       const pulse = (Math.sin(_bobTimer * 6) + 1) / 2;
       ctx.strokeStyle = `rgba(255,${80 + (pulse * 80) | 0},0,${0.55 + pulse * 0.35})`;
       ctx.lineWidth   = 2.5;
-      ctx.shadowColor = '#FB923C';
-      ctx.shadowBlur  = 12 + pulse * 10;
+      ctx.shadowColor = '#ff6600';
+      ctx.shadowBlur  = 10 + pulse * 10;
       ctx.beginPath();
       ctx.arc(0, 0, r + 5, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.shadowBlur  = 20;
-      ctx.shadowColor = '#22D3EE';
+      ctx.shadowBlur  = 18;
+      ctx.shadowColor = '#00ccff';
     }
 
     // Body
-    ctx.fillStyle = '#22D3EE';
+    ctx.fillStyle = '#00aaff';
     ctx.beginPath();
     ctx.roundRect(-r, -r, r * 2, r * 2, 4);
     ctx.fill();
 
     // Inner panel
-    ctx.fillStyle = '#0C4A6E';
+    ctx.fillStyle = '#003366';
     ctx.beginPath();
     ctx.roundRect(-r * 0.6, -r * 0.6, r * 1.2, r * 1.2, 3);
     ctx.fill();
 
-    // Eyes (two white dots)
+    // Eyes (two cyan dots)
     ctx.shadowBlur = 8;
     ctx.shadowColor = '#ffffff';
     ctx.fillStyle = '#ffffff';
@@ -400,9 +400,9 @@ const Player = (() => {
     ctx.fill();
 
     // Direction indicator (bright nose)
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = '#22D3EE';
-    ctx.fillStyle = '#E0F2FE';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#00ffff';
+    ctx.fillStyle = '#00ffff';
     ctx.beginPath();
     ctx.arc(r * 0.85, 0, 4, 0, Math.PI * 2);
     ctx.fill();
