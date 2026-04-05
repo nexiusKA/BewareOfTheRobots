@@ -54,7 +54,8 @@ const UI = (() => {
         '<div class="start-section-header">⚡ KEY MECHANICS</div>' +
         '<div class="start-feat-row">⏱️ Time <b>slows</b> when you near an enemy\'s vision cone — use it to plan</div>' +
         '<div class="start-feat-row">⚠️ Detection meter fills above enemies — escape the cone before it maxes out</div>' +
-        '<div class="start-feat-row">🔍 Fully detected? Enemy <b>chases</b> you — hide before it catches up</div>' +
+        '<div class="start-feat-row">🔍 Fully detected? Enemy <b>chases</b> you — alert meter rises; escape before it fills</div>' +
+        '<div class="start-feat-row">🚨 <b>Alert meter</b> stays high? You have ~3s to break detection or it\'s game over</div>' +
         '<div class="start-feat-row">❓ If you escape, the enemy <b>searches</b> your last known position then returns to patrol</div>' +
         '<div class="start-feat-row">🛡️ A <b>1.5s grace period</b> protects you at the start of every sector</div>' +
         '<div class="start-feat-row">🌫️ <b>Fog of War</b> <small>[F]</small> &nbsp;•&nbsp; 👻 <b>Ghost Mode</b> <small>[G]</small> &nbsp;•&nbsp; 📋 <b>Full info</b> <small>[I]</small></div>' +
@@ -110,9 +111,9 @@ const UI = (() => {
     _applyClass('overlay-fail');
     overlayTitle.textContent = 'CAUGHT';
     overlayMsg.innerHTML =
-      'A patrol unit closed in and caught you.<br>' +
-      'Next time: break line of sight before the detection meter fills,<br>' +
-      'or hide until the enemy gives up the search.<br><br>' +
+      'The global alert level was sustained too long — you were caught.<br>' +
+      'Escape enemy detection before the alert meter fills completely.<br>' +
+      'Break line of sight and stay hidden until the alert clears.<br><br>' +
       '<small>Press R or click below to retry instantly</small>';
     overlayBtn.textContent = 'RETRY';
     overlayBtn.onclick = onRestart;
@@ -191,6 +192,11 @@ const UI = (() => {
       _dangerPulse += dt;
     } else {
       _dangerPulse = 0;
+    }
+    if (_alertLevel >= ALERT_THRESHOLD) {
+      _alertPulse += dt;
+    } else {
+      _alertPulse = 0;
     }
   }
 
@@ -287,6 +293,53 @@ const UI = (() => {
     ctx.shadowBlur   = 0;
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign    = 'left';
+
+    // Alert meter — thin coloured bar across the bottom edge of the HUD strip.
+    // Fills left-to-right as alert level rises; flashes red when critical.
+    if (_alertLevel > 0.01) {
+      const meterH = 3;
+      const meterY = barH - meterH;
+      const meterW = Math.round(canvasW * _alertLevel);
+      const isHigh = _alertLevel >= ALERT_THRESHOLD;
+
+      // Colour: green → yellow → orange → red
+      let r, g;
+      if (_alertLevel <= 0.5) {
+        r = Math.round(_alertLevel * 2 * 220);
+        g = 200;
+      } else {
+        r = 255;
+        g = Math.round((1 - (_alertLevel - 0.5) * 2) * 180);
+      }
+      const flashAlpha = isHigh ? (0.8 + Math.sin(_alertPulse * 12) * 0.2) : 1;
+
+      ctx.save();
+      ctx.globalAlpha = flashAlpha;
+      ctx.fillStyle   = `rgb(${r},${g},0)`;
+      ctx.shadowBlur  = isHigh ? 10 : 4;
+      ctx.shadowColor = `rgb(${r},${g},0)`;
+      ctx.fillRect(0, meterY, meterW, meterH);
+
+      // "ALERT" label and optional countdown text
+      ctx.font         = 'bold 9px Courier New';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle    = `rgba(${r},${g},0,0.9)`;
+      ctx.shadowBlur   = 3;
+      ctx.textAlign    = 'left';
+      ctx.fillText('ALERT', pad, meterY - 1);
+
+      if (isHigh && _alertHoldTimer > 0) {
+        const remaining = Math.max(0, _alertFailDuration - _alertHoldTimer);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${remaining.toFixed(1)}s`, canvasW - pad, meterY - 1);
+      }
+
+      ctx.globalAlpha  = 1;
+      ctx.shadowBlur   = 0;
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign    = 'left';
+      ctx.restore();
+    }
   }
 
   // ── Mini-map ─────────────────────────────────────────────
@@ -424,6 +477,19 @@ const UI = (() => {
   let _dangerLevel  = 0;
   let _dangerPulse  = 0;
 
+  // ── Alert meter ──────────────────────────────────────────
+  const ALERT_THRESHOLD = 0.85;
+  let _alertLevel        = 0;
+  let _alertHoldTimer    = 0;
+  let _alertFailDuration = 3.0;
+  let _alertPulse        = 0;
+
+  function setAlertLevel(level, holdTimer, failDuration) {
+    _alertLevel        = Utils.clamp(level, 0, 1);
+    _alertHoldTimer    = holdTimer;
+    _alertFailDuration = failDuration;
+  }
+
   function setDanger(threat) {
     _dangerLevel = threat;
   }
@@ -450,12 +516,44 @@ const UI = (() => {
     ctx.restore();
   }
 
+  // ── Alert-level critical warning ─────────────────────────
+  // Shown when the global alert level has climbed above ALERT_THRESHOLD.
+  // Displays in orange (distinct from the red proximity-danger warning) with
+  // a live countdown when the fail timer is running.
+  function drawAlertWarning(ctx, w, h) {
+    if (_alertLevel < ALERT_THRESHOLD) return;
+
+    const fadeIn = Utils.clamp((_alertLevel - ALERT_THRESHOLD) / (1 - ALERT_THRESHOLD), 0, 1);
+    const pulse  = (Math.sin(_alertPulse * 10) + 1) / 2;
+    const alpha  = fadeIn * (0.6 + pulse * 0.4);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 13px Courier New';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowBlur  = 12 + pulse * 12;
+    ctx.shadowColor = '#ff4400';
+    ctx.fillStyle   = '#ff6600';
+
+    if (_alertHoldTimer > 0) {
+      const remaining = Math.max(0, _alertFailDuration - _alertHoldTimer);
+      ctx.fillText(`⚠  ALERT CRITICAL — ${remaining.toFixed(1)}s  ⚠`, w / 2, 76);
+    } else {
+      ctx.fillText('⚠  ALERT CRITICAL  ⚠', w / 2, 76);
+    }
+
+    ctx.shadowBlur  = 0;
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
   return {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
     showInfo, hideInfo, isInfoVisible,
     setTheme, setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
-    setFogMode, setGhostMode, setDebugMode,
-    update, drawHUD, drawScanlines, drawVignette, drawDangerWarning,
+    setAlertLevel, setFogMode, setGhostMode, setDebugMode,
+    update, drawHUD, drawScanlines, drawVignette, drawDangerWarning, drawAlertWarning,
     drawMinimap, updateMinimap
   };
 })();
