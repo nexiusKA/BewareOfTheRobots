@@ -9,11 +9,15 @@ const Menu = (() => {
   const _soundBtn = document.getElementById('start-menu-sound-btn');
   const _buildEl  = document.getElementById('start-menu-build');
 
+  // Callback stored at show() time; onclick is wired once during init.
+  let _onStartCallback = null;
+
   // Populate build info (version.js must load before menu.js)
   if (_buildEl && typeof BUILD_INFO !== 'undefined') {
-    _buildEl.textContent =
-      'v0.' + BUILD_INFO.run + '  ·  ' + BUILD_INFO.sha.slice(0, 7) +
-      '  ·  ' + BUILD_INFO.date;
+    const run    = BUILD_INFO.run    || '—';
+    const sha    = (BUILD_INFO.sha   || '').slice(0, 7) || '—';
+    const date   = BUILD_INFO.date   || '';
+    _buildEl.textContent = 'v0.' + run + '  ·  ' + sha + (date ? '  ·  ' + date : '');
   }
 
   // ── Sound toggle ─────────────────────────────────────────
@@ -48,32 +52,39 @@ const Menu = (() => {
     _el.classList.add('menu-fading-out');
 
     let _done = false;
+    let _timeoutId = null;
+
     function _finish() {
       if (_done) return;
       _done = true;
+      clearTimeout(_timeoutId);
       _el.classList.add('hidden');
       _el.classList.remove('menu-fading-out');
       if (callback) callback();
     }
 
     _el.addEventListener('animationend', _finish, { once: true });
-    // Fallback: if the animationend never fires (e.g., animation skipped), proceed.
-    setTimeout(_finish, 500);
+    // Fallback: if animationend never fires (animation disabled/skipped), proceed.
+    _timeoutId = setTimeout(_finish, 500);
+  }
+
+  // ── Play button — wired once at init time ─────────────────
+  if (_playBtn) {
+    _playBtn.addEventListener('click', function () {
+      if (!_onStartCallback) return;
+      // Prevent double-tap while fade is in progress
+      _playBtn.disabled = true;
+      _fadeOutAndRun(_onStartCallback);
+    });
   }
 
   // ── Public API ───────────────────────────────────────────
 
   function show(onStart) {
+    _onStartCallback = onStart;
+    if (_playBtn) _playBtn.disabled = false;
     _el.classList.remove('hidden', 'menu-fading-out');
     _syncSoundBtn();
-
-    if (_playBtn) {
-      _playBtn.onclick = function () {
-        // Prevent double-tap
-        _playBtn.disabled = true;
-        _fadeOutAndRun(onStart);
-      };
-    }
   }
 
   function hide() {
@@ -83,3 +94,4 @@ const Menu = (() => {
 
   return { show, hide };
 })();
+
