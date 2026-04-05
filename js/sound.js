@@ -4,7 +4,8 @@
 
 const Sound = (() => {
 
-  let _ctx = null;
+  let _ctx   = null;
+  let _muted = false;
 
   // Lazily create AudioContext on first call (requires user gesture)
   function _getCtx() {
@@ -56,10 +57,15 @@ const Sound = (() => {
     src.stop(startTime + duration + 0.01);
   }
 
+  // ── Mute toggle ───────────────────────────────────────────
+  function toggleMute() { _muted = !_muted; }
+  function isMuted()    { return _muted; }
+
   // ── Public sounds ─────────────────────────────────────────
 
   // Ascending 3-note chime (C5 → E5 → G5)
   function keyPickup() {
+    if (_muted) return;
     const ctx = _getCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -70,6 +76,7 @@ const Sound = (() => {
 
   // Short low thud with slight pitch drop
   function bombPlace() {
+    if (_muted) return;
     const ctx = _getCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -90,6 +97,7 @@ const Sound = (() => {
 
   // Explosion: noise burst + low boom + impact hit
   function bombDetonate() {
+    if (_muted) return;
     const ctx = _getCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -116,6 +124,7 @@ const Sound = (() => {
 
   // Short soft electronic tap played on every successful tile move
   function move() {
+    if (_muted) return;
     const ctx = _getCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -125,6 +134,7 @@ const Sound = (() => {
 
   // Mechanical lock-click followed by a bright unlock chime
   function doorOpen() {
+    if (_muted) return;
     const ctx = _getCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -138,5 +148,5 @@ const Sound = (() => {
     _tone(1800, 'sine', 0.14, 0.20, now + 0.23);
   }
 
-  return { keyPickup, bombPlace, bombDetonate, move, doorOpen };
+  return { keyPickup, bombPlace, bombDetonate, move, doorOpen, toggleMute, isMuted };
 })();
