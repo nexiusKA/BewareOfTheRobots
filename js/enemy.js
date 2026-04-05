@@ -94,10 +94,10 @@ const EnemyManager = (() => {
   // ── Shared tunable config (debug panel) ──────────────────────────────────
   // 0.8 s gives the player a clear, fair window to react to the rising meter.
   // The original 0.2 s value was too fast for readable stealth gameplay.
-  let _detectTime = 0.8;  // seconds of continuous visibility to fill the meter
+  let _detectTime = 0.5;  // seconds of continuous visibility to fill the meter
   let _coneScale  = 0.70; // multiplier applied to visionRange and visionAngle
 
-  function setDetectTime(t) { _detectTime = Utils.clamp(+t || 0.8, 0.05, 30); }
+  function setDetectTime(t) { _detectTime = Utils.clamp(+t || 0.5, 0.05, 30); }
   function setConeScale(s)  { _coneScale  = Utils.clamp(+s || 0.7, 0.1, 3.0); }
   function getDetectTime()  { return _detectTime; }
   function getConeScale()   { return _coneScale; }
@@ -556,17 +556,17 @@ const EnemyManager = (() => {
           break;
         default:
           if (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) {
-            grad.addColorStop(0,    'rgba(59,130,246,0.55)');
-            grad.addColorStop(0.45, 'rgba(37,99,235,0.24)');
-            grad.addColorStop(1,    'rgba(29,78,216,0.0)');
+            grad.addColorStop(0,    'rgba(80,120,255,0.50)');
+            grad.addColorStop(0.45, 'rgba(60,90,220,0.22)');
+            grad.addColorStop(1,    'rgba(40,60,180,0.0)');
           } else if (this.type === TYPE.HUNTER) {
             grad.addColorStop(0,   'rgba(255,20,60,0.65)');
             grad.addColorStop(0.5, 'rgba(200,10,50,0.28)');
             grad.addColorStop(1,   'rgba(140,0,30,0.0)');
           } else {
-            grad.addColorStop(0,   'rgba(239,68,68,0.38)');
-            grad.addColorStop(0.4, 'rgba(220,38,38,0.16)');
-            grad.addColorStop(1,   'rgba(185,28,28,0.0)');
+            grad.addColorStop(0,   'rgba(255,220,0,0.35)');
+            grad.addColorStop(0.4, 'rgba(255,200,0,0.15)');
+            grad.addColorStop(1,   'rgba(255,200,0,0.0)');
           }
       }
     }
@@ -577,9 +577,9 @@ const EnemyManager = (() => {
         case STATE.SEARCH:     return 'rgba(255,140,0,0.40)';
         case STATE.SUSPICIOUS: return 'rgba(255,190,0,0.45)';
         default:
-          if (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) return 'rgba(59,130,246,0.40)';
+          if (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) return 'rgba(100,140,255,0.38)';
           if (this.type === TYPE.HUNTER)                                     return 'rgba(220,30,70,0.50)';
-          return 'rgba(239,68,68,0.28)';
+          return 'rgba(255,220,0,0.25)';
       }
     }
   }
@@ -706,55 +706,55 @@ const EnemyManager = (() => {
   }
 
   function _drawPatrolBody(ctx, r, isAlert) {
-    ctx.shadowBlur  = isAlert ? 26 : 16;
-    ctx.shadowColor = isAlert ? '#FF2233' : '#EF4444';
-    ctx.fillStyle   = isAlert ? '#CC1122' : '#991B1B';
+    ctx.shadowBlur  = isAlert ? 24 : 14;
+    ctx.shadowColor = isAlert ? '#ff3344' : '#ff6600';
+    ctx.fillStyle   = isAlert ? '#cc2233' : '#cc4400';
     ctx.beginPath();
     ctx.roundRect(-r, -r, r * 2, r * 2, 4);
     ctx.fill();
-    ctx.fillStyle = isAlert ? '#550011' : '#3B0A0A';
+    ctx.fillStyle = isAlert ? '#550011' : '#441100';
     ctx.beginPath();
     ctx.roundRect(-r * 0.6, -r * 0.6, r * 1.2, r * 1.2, 3);
     ctx.fill();
     ctx.shadowBlur  = 10;
-    ctx.shadowColor = isAlert ? '#FF0000' : '#FCA5A5';
-    ctx.fillStyle   = isAlert ? '#FF2244' : '#F87171';
+    ctx.shadowColor = isAlert ? '#ff0000' : '#ffaa00';
+    ctx.fillStyle   = isAlert ? '#ff2244' : '#ffaa00';
     ctx.beginPath();
     ctx.arc(r * 0.2, 0, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = isAlert ? '#FF0000' : '#EF4444';
+    ctx.fillStyle = isAlert ? '#ff0000' : '#ff6600';
     ctx.beginPath();
     ctx.arc(r * 0.85, 0, 4, 0, Math.PI * 2);
     ctx.fill();
   }
 
   function _drawScannerBody(ctx, r, isAlert) {
-    ctx.shadowBlur  = isAlert ? 28 : 18;
-    ctx.shadowColor = isAlert ? '#FF2233' : '#3B82F6';
-    ctx.fillStyle   = isAlert ? '#CC1122' : '#1D4ED8';
+    ctx.shadowBlur  = isAlert ? 28 : 16;
+    ctx.shadowColor = isAlert ? '#ff3344' : '#4466ff';
+    ctx.fillStyle   = isAlert ? '#cc2233' : '#1133bb';
     ctx.beginPath();
     ctx.roundRect(-r, -r, r * 2, r * 2, r * 0.55);
     ctx.fill();
-    ctx.fillStyle = isAlert ? '#550011' : '#0F172A';
+    ctx.fillStyle = isAlert ? '#550011' : '#091840';
     ctx.beginPath();
     ctx.roundRect(-r * 0.55, -r * 0.55, r * 1.1, r * 1.1, r * 0.4);
     ctx.fill();
     ctx.shadowBlur  = 8;
-    ctx.shadowColor = isAlert ? '#FF0000' : '#93C5FD';
-    ctx.fillStyle   = isAlert ? '#FF2244' : '#93C5FD';
+    ctx.shadowColor = isAlert ? '#ff0000' : '#88aaff';
+    ctx.fillStyle   = isAlert ? '#ff2244' : '#88aaff';
     for (let i = -1; i <= 1; i++) {
       ctx.beginPath();
       ctx.arc(r * 0.22, i * r * 0.32, 3.2, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.strokeStyle = isAlert ? '#FF2244' : '#60A5FA';
+    ctx.strokeStyle = isAlert ? '#ff2244' : '#6688ff';
     ctx.lineWidth   = 2;
     ctx.shadowBlur  = 5;
-    ctx.shadowColor = isAlert ? '#FF2244' : '#60A5FA';
+    ctx.shadowColor = isAlert ? '#ff2244' : '#6688ff';
     ctx.beginPath();
     ctx.moveTo(0, -r); ctx.lineTo(0, -r * 1.55);
     ctx.stroke();
-    ctx.fillStyle = isAlert ? '#FF4466' : '#BFDBFE';
+    ctx.fillStyle = isAlert ? '#ff4466' : '#aaccff';
     ctx.beginPath();
     ctx.arc(0, -r * 1.55, 3, 0, Math.PI * 2);
     ctx.fill();
