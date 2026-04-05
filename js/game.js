@@ -483,7 +483,8 @@ const Game = (() => {
   // If fewer candidates than keys exist the original layout is used as fallback.
   function _randomizeKeyPositions(def) {
     const { cols, rows, playerStart, map } = def;
-    // minKeyDist is set per-level in level.js and forwarded through MapGen.
+    // minKeyDist comes from the level config and is forwarded through MapGen's
+    // return value so that key placement tightens with each sector.
     const minKeyDist = def.minKeyDist ?? 6;
     const T  = Tilemap.TILE;
     const grid = map.slice();

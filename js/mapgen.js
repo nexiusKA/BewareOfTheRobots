@@ -300,10 +300,11 @@ const MapGen = (() => {
       // their wide vision angle covers the whole corridor.
       let colA, colB;
       if (!isScannerBot && slotIdx % 3 === 2 && cols > 20) {
-        // Intersection guard: patrol middle 40% of corridor
-        const third = Math.floor(cols * 0.30);
-        colA = third;
-        colB = cols - 1 - third;
+        // Intersection guard: patrol middle 40% of corridor.
+        // edgeMargin is 30% of cols, leaving the inner 40% as the patrol range.
+        const edgeMargin = Math.floor(cols * 0.30);
+        colA = edgeMargin;
+        colB = cols - 1 - edgeMargin;
       } else {
         // Full-width patrol: alternate direction per slot
         const ltr = slotIdx % 2 === 0;
