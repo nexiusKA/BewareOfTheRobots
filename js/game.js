@@ -506,7 +506,8 @@ const Game = (() => {
     const alertCount = EnemyManager.getAlertCount();
 
     // Detect new alert event — spawn warning notification once per alert rise
-    if (alertCount > 0 && _prevAlertCount === 0 && !_debugMode && _graceTimer <= 0) {
+    const isNewAlertEvent = alertCount > 0 && _prevAlertCount === 0 && !_debugMode && _graceTimer <= 0;
+    if (isNewAlertEvent) {
       Sound.alarm();
       UI.spawnFloatText('⚠ ALERT', Player.getPx(), Player.getPy() - 52, '#ff2244');
     }
