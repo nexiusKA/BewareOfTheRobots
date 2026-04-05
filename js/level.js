@@ -91,33 +91,64 @@ const Levels = (() => {
       puzzleDensityOverride: 0.9, puzzleDoorType: 'timed',
       puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 7: Heavy Bot — first armored enemy ─────────────────────────────
-    { cols: 48, rows: 36, startBombs: 1, keyCount: 3, doorCount: 3,
-      ammoCount: 3, enemyCount: 6, scannerCount: 2,
-      snifferCount: 1, fastCount: 1, heavyCount: 1,
-      extraPassageRate: 0.08, enemySpeedMult: 1.20, visionMult: 1.20,
-      minKeyDist: 12 },
+    // ── Sector 7: MULTI-KEY CHAOS — first real complex puzzle ────────────────
+    // Three colored keys (yellow/red/blue) locked behind three doors.  The map
+    // is deliberately open (high extraPassageRate) so multiple branching paths
+    // converge on a central hub.  Each branch hides one key behind a mix of
+    // pressure-plate gates and patrolling robots, forcing the player to decide
+    // which key to chase first.  No lasers, traps, or conveyors — the chaos
+    // comes from overlapping patrol routes and wrong-path penalties.
+    { cols: 44, rows: 34, startBombs: 2, keyCount: 3, doorCount: 3,
+      ammoCount: 3, enemyCount: 2, scannerCount: 1,
+      snifferCount: 1, fastCount: 0, heavyCount: 0,
+      extraPassageRate: 0.22, enemySpeedMult: 1.10, visionMult: 1.10,
+      minKeyDist: 12,
+      puzzleDensityOverride: 0.70,
+      puzzleNoLasers: true, puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 8: Four doors — full color cycle ───────────────────────────────
-    { cols: 50, rows: 36, startBombs: 1, keyCount: 4, doorCount: 4,
-      ammoCount: 3, enemyCount: 7, scannerCount: 2,
-      snifferCount: 2, fastCount: 1, heavyCount: 1,
-      extraPassageRate: 0.07, enemySpeedMult: 1.25, visionMult: 1.25,
-      minKeyDist: 13 },
+    // ── Sector 8: LASER + TIMING HELL — lasers, timed doors, enemy pressure ──
+    // Laser emitters block the corridors leading to both keys.  Every key zone
+    // is gated by a timed pressure-plate door: the player must hit the plate,
+    // sprint through the narrowing window, and collect the key while a
+    // ScannerBot sweeps the far end and two GuardBots patrol the timing
+    // corridor.  Extra bombs (startBombs: 2) let the player blast emitters but
+    // ammo must be conserved — three crates are hidden near danger zones.
+    { cols: 40, rows: 30, startBombs: 2, keyCount: 2, doorCount: 2,
+      ammoCount: 3, enemyCount: 2, scannerCount: 1,
+      snifferCount: 0, fastCount: 0, heavyCount: 0,
+      extraPassageRate: 0.15, enemySpeedMult: 1.15, visionMult: 1.15,
+      minKeyDist: 11,
+      puzzleDensityOverride: 0.90, puzzleDoorType: 'timed',
+      puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 9: High tension — multiple special enemies ─────────────────────
-    { cols: 52, rows: 38, startBombs: 1, keyCount: 4, doorCount: 4,
-      ammoCount: 3, enemyCount: 7, scannerCount: 2,
-      snifferCount: 2, fastCount: 2, heavyCount: 1,
-      extraPassageRate: 0.06, enemySpeedMult: 1.30, visionMult: 1.30,
-      minKeyDist: 14 },
+    // ── Sector 9: TRAP LEVEL — fake safety, one-way corridors, hidden traps ──
+    // The map looks open but one-way doors seal exits behind the player and
+    // trap tiles lurk on the obvious path.  A SnifferBot with radius-only
+    // detection sniffs out hiding spots even through walls, so players cannot
+    // simply wait for patrols to pass.  Doors close behind the player, turning
+    // each phase into a commitment — there is no retreating once you enter.
+    { cols: 46, rows: 36, startBombs: 1, keyCount: 3, doorCount: 3,
+      ammoCount: 3, enemyCount: 2, scannerCount: 1,
+      snifferCount: 1, fastCount: 0, heavyCount: 0,
+      extraPassageRate: 0.10, enemySpeedMult: 1.22, visionMult: 1.22,
+      minKeyDist: 13,
+      puzzleDensityOverride: 0.85, puzzleDoorType: 'oneway',
+      puzzleNoConveyors: true },
 
-    // ── Sector 10: Endgame — every resource counts ────────────────────────────
-    { cols: 54, rows: 40, startBombs: 1, keyCount: 5, doorCount: 5,
-      ammoCount: 3, enemyCount: 8, scannerCount: 3,
-      snifferCount: 2, fastCount: 2, heavyCount: 2,
-      extraPassageRate: 0.05, enemySpeedMult: 1.40, visionMult: 1.40,
-      minKeyDist: 15 },
+    // ── Sector 10: FINAL ESCAPE — ultimate test, every system active ──────────
+    // Two keys, two doors, one exit.  Start in a tight entry corridor, push
+    // into a large chaotic zone bristling with overlapping vision cones, then
+    // make a final sprint through a laser-and-timed-door gauntlet as enemies
+    // close in from behind.  All puzzle systems are live: lasers, timed doors,
+    // one-way gates, traps, and conveyors.  A HeavyBot requires two bomb hits
+    // to neutralize, rationing the four ammo crates.  The final stretch must
+    // be earned — no empty run to the exit.
+    { cols: 50, rows: 38, startBombs: 2, keyCount: 2, doorCount: 2,
+      ammoCount: 4, enemyCount: 2, scannerCount: 1,
+      snifferCount: 1, fastCount: 0, heavyCount: 1,
+      extraPassageRate: 0.08, enemySpeedMult: 1.38, visionMult: 1.38,
+      minKeyDist: 14,
+      puzzleDensityOverride: 1.00 },
   ];
 
   function get(index)  { return _levels[index] || null; }
