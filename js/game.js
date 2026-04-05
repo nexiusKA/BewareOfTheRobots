@@ -201,6 +201,7 @@ const Game = (() => {
     _holdDir   = null;
     _holdTimer = 0;
     _conveyorChain = 0;
+    Music.play();
   }
 
   function _onKeyCollect(col, row, keyColor) {
@@ -225,6 +226,7 @@ const Game = (() => {
 
   function _onExit() {
     _state = STATE.WIN;
+    Music.stop();
     const nextIndex = _currentLevel + 1;
     if (nextIndex >= Levels.count()) {
       UI.showVictory(() => {
@@ -243,6 +245,7 @@ const Game = (() => {
   function _onDetected() {
     if (_state !== STATE.PLAYING) return;
     _state = STATE.FAIL;
+    Music.stop();
     _failFlash = 0.7;
     _shakeDur = SHAKE_DURATION;
     UI.showGameOver(() => {
