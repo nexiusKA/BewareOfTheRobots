@@ -843,7 +843,127 @@ body {
   box-shadow: 0 0 10px rgba(255, 221, 68, 0.55);
 }
 
-/* ── Mobile toggle button (shown in all menu overlays) ──── */
+/* ── Fullscreen / pseudo-fullscreen layout ──────────────────── */
+
+/* Body adjustments when fullscreen is active (real or pseudo).
+   Removes padding, centers the container, and prevents scroll. */
+body.is-fullscreen,
+body.pseudo-fullscreen {
+  padding: env(safe-area-inset-top, 0px)
+           env(safe-area-inset-right, 0px)
+           env(safe-area-inset-bottom, 0px)
+           env(safe-area-inset-left, 0px);
+  /* Use 100dvh so the address bar retraction on mobile is accounted for */
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  align-items: center;           /* vertically center the game container */
+  overscroll-behavior: none;     /* prevent pull-to-refresh / over-scroll */
+  touch-action: none;            /* prevent pinch-zoom and inadvertent scroll */
+}
+
+/* Game container is scaled via JS transform; keep it centered and clean. */
+body.is-fullscreen #game-container,
+body.pseudo-fullscreen #game-container {
+  border: none;
+  box-shadow: none;
+}
+
+/* ── Fullscreen button — start menu variant ─────────────────── */
+#start-menu-fs-btn {
+  background: transparent;
+  border: 1px solid rgba(0, 255, 204, 0.22);
+  border-radius: 8px;
+  color: rgba(0, 255, 204, 0.55);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.76rem;
+  letter-spacing: 1.5px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#start-menu-fs-btn:hover,
+#start-menu-fs-btn:focus {
+  background: rgba(0, 255, 204, 0.07);
+  color: rgba(0, 255, 204, 0.82);
+  border-color: rgba(0, 255, 204, 0.42);
+  outline: none;
+}
+
+#start-menu-fs-btn.fullscreen-active {
+  background: rgba(0, 255, 204, 0.12);
+  color: #00ffcc;
+  border-color: rgba(0, 255, 204, 0.55);
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.25);
+}
+
+/* ── Fullscreen button — dpad variant ───────────────────────── */
+.dpad-fs-btn {
+  color: #00ffcc;
+  border-color: rgba(0, 255, 204, 0.45);
+  background: rgba(0, 255, 204, 0.08);
+  font-size: 1.2rem;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.dpad-fs-btn:active,
+.dpad-fs-btn.dpad-pressed,
+.dpad-fs-btn.fullscreen-active {
+  background: rgba(0, 255, 204, 0.26);
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.55);
+}
+
+/* ── Fallback toast notification ────────────────────────────── */
+.fs-toast {
+  position: fixed;
+  bottom: max(24px, env(safe-area-inset-bottom, 24px));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 30, 0.93);
+  border: 1px solid rgba(0, 255, 204, 0.38);
+  border-radius: 8px;
+  color: rgba(0, 255, 204, 0.90);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  padding: 10px 18px;
+  max-width: min(90vw, 420px);
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+  z-index: 200;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.fs-toast.fs-toast-hide {
+  opacity: 0;
+}
+
+/* ── Safe-area adjustments for dpad zones ──────────────────── */
+/* Shift dpad zones inward on notched / rounded-corner devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  #dpad-move {
+    bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+    left:   max(16px, calc(env(safe-area-inset-left)   + 8px));
+  }
+
+  #dpad-actions {
+    bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+    right:  max(16px, calc(env(safe-area-inset-right)  + 8px));
+  }
+
+  #dpad-system {
+    top:   max(48px, calc(env(safe-area-inset-top) + 38px + 10px));
+    right: max(8px,  calc(env(safe-area-inset-right) + 4px));
+  }
+}
+
 .mobile-toggle-btn {
   display: block;
   margin: 10px auto 0;
