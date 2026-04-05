@@ -58,7 +58,10 @@ const Sound = (() => {
   }
 
   // ── Mute toggle ───────────────────────────────────────────
-  function toggleMute() { _muted = !_muted; }
+  function toggleMute() {
+    _muted = !_muted;
+    Music.onMuteChange(_muted);
+  }
   function isMuted()    { return _muted; }
 
   // ── Public sounds ─────────────────────────────────────────
@@ -149,4 +152,42 @@ const Sound = (() => {
   }
 
   return { keyPickup, bombPlace, bombDetonate, move, doorOpen, toggleMute, isMuted };
+})();
+
+// ── Music ────────────────────────────────────────────────────
+// Plays a random level soundtrack (levelsounds/level1-10.mp3)
+// at background volume (30%).  Stops cleanly between levels.
+const Music = (() => {
+  const TRACK_COUNT = 10;
+  const VOLUME      = 0.3;
+
+  let _audio   = null;
+  let _muted   = false;
+
+  function play() {
+    stop();
+    const track = Math.floor(Math.random() * TRACK_COUNT) + 1;
+    _audio = new Audio(`levelsounds/level${track}.mp3`);
+    _audio.loop   = true;
+    _audio.volume = _muted ? 0 : VOLUME;
+    _audio.onerror = () => { _audio = null; };
+    _audio.play().catch(() => {});
+  }
+
+  function stop() {
+    if (_audio) {
+      _audio.pause();
+      _audio.src = '';
+      _audio = null;
+    }
+  }
+
+  function onMuteChange(muted) {
+    _muted = muted;
+    if (_audio) {
+      _audio.volume = muted ? 0 : VOLUME;
+    }
+  }
+
+  return { play, stop, onMuteChange };
 })();
