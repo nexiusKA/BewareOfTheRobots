@@ -43,6 +43,9 @@ const EnemyManager = (() => {
     // Named enemy types (preferred for new code)
     GUARD_BOT:   'guard_bot',    // balanced speed, medium cone (red)
     SCANNER_BOT: 'scanner_bot',  // slower, wide long-range cone (blue)
+    SNIFFER_BOT: 'sniffer_bot',  // radius detection, ignores walls (green)
+    FAST_BOT:    'fast_bot',     // high speed, short vision (yellow/white)
+    HEAVY_BOT:   'heavy_bot',    // slow, large body, 2 hits to destroy (grey)
   };
 
   // ── FSM state constants ──────────────────────────────────────────────────
@@ -500,6 +503,9 @@ const EnemyManager = (() => {
       ctx.rotate(this.facing);
       if      (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) _drawScannerBody(ctx, r, isAlert);
       else if (this.type === TYPE.HUNTER)                                     _drawHunterBody(ctx, r, isAlert);
+      else if (this.type === TYPE.SNIFFER_BOT)                                _drawSnifferBody(ctx, r, isAlert);
+      else if (this.type === TYPE.FAST_BOT)                                   _drawFastBody(ctx, r, isAlert);
+      else if (this.type === TYPE.HEAVY_BOT)                                  _drawHeavyBody(ctx, r, isAlert, this._health);
       else                                                                     _drawPatrolBody(ctx, r, isAlert);
       ctx.shadowBlur = 0;
       ctx.restore();
@@ -563,6 +569,19 @@ const EnemyManager = (() => {
             grad.addColorStop(0,   'rgba(255,20,60,0.65)');
             grad.addColorStop(0.5, 'rgba(200,10,50,0.28)');
             grad.addColorStop(1,   'rgba(140,0,30,0.0)');
+          } else if (this.type === TYPE.SNIFFER_BOT) {
+            // SnifferBot shows a soft radial pulse (not directional)
+            grad.addColorStop(0,   'rgba(0,220,100,0.40)');
+            grad.addColorStop(0.5, 'rgba(0,180,80,0.18)');
+            grad.addColorStop(1,   'rgba(0,140,60,0.0)');
+          } else if (this.type === TYPE.FAST_BOT) {
+            grad.addColorStop(0,   'rgba(255,240,80,0.45)');
+            grad.addColorStop(0.4, 'rgba(240,220,60,0.18)');
+            grad.addColorStop(1,   'rgba(220,200,0,0.0)');
+          } else if (this.type === TYPE.HEAVY_BOT) {
+            grad.addColorStop(0,   'rgba(180,180,180,0.45)');
+            grad.addColorStop(0.4, 'rgba(140,140,140,0.20)');
+            grad.addColorStop(1,   'rgba(100,100,100,0.0)');
           } else {
             grad.addColorStop(0,   'rgba(255,220,0,0.35)');
             grad.addColorStop(0.4, 'rgba(255,200,0,0.15)');
@@ -579,6 +598,9 @@ const EnemyManager = (() => {
         default:
           if (this.type === TYPE.SCANNER || this.type === TYPE.SCANNER_BOT) return 'rgba(100,140,255,0.38)';
           if (this.type === TYPE.HUNTER)                                     return 'rgba(220,30,70,0.50)';
+          if (this.type === TYPE.SNIFFER_BOT)                                return 'rgba(0,200,80,0.38)';
+          if (this.type === TYPE.FAST_BOT)                                   return 'rgba(240,230,60,0.35)';
+          if (this.type === TYPE.HEAVY_BOT)                                  return 'rgba(160,160,160,0.38)';
           return 'rgba(255,220,0,0.25)';
       }
     }
@@ -627,6 +649,86 @@ const EnemyManager = (() => {
     }
   }
   // ── end GuardBot / ScannerBot ─────────────────────────────────────────────
+
+
+  // =========================================================================
+  //  SnifferBot — radius-based detection, ignores walls (green)
+  // =========================================================================
+  // Detects the player within a fixed radius regardless of walls or facing.
+  // Slower movement but creates sustained pressure in tight corridors.
+  class SnifferBot extends BaseEnemy {
+    constructor(def) {
+      super({
+        type:        TYPE.SNIFFER_BOT,
+        patrol:      def.patrol,
+        speed:       def.speed        != null ? def.speed        : 1.10,
+        visionRange: def.visionRange  != null ? def.visionRange  : 120,
+        visionAngle: Math.PI * 2,  // full circle for visual
+        waitDuration: def.waitDuration != null ? def.waitDuration : 0.5,
+        detectTimeMultiplier: 1.2,
+        searchDuration: 4.0,
+      });
+    }
+
+    // Override sense(): use radius-only detection, ignore walls and angle.
+    sense(playerPx, playerPy) {
+      const r = this.visionRange * _coneScale;
+      return Utils.dist2(this.px, this.py, playerPx, playerPy) <= r * r;
+    }
+  }
+
+  // =========================================================================
+  //  FastBot — very fast movement, short narrow vision (yellow/white)
+  // =========================================================================
+  // Rushes patrol routes at high speed with a short, narrow cone.
+  // Covers corridors quickly but easy to dodge if timed correctly.
+  class FastBot extends BaseEnemy {
+    constructor(def) {
+      super({
+        type:        TYPE.FAST_BOT,
+        patrol:      def.patrol,
+        speed:       def.speed        != null ? def.speed        : 3.20,
+        visionRange: def.visionRange  != null ? def.visionRange  : 95,
+        visionAngle: def.visionAngle  != null ? def.visionAngle  : Math.PI / 4.5,
+        waitDuration: def.waitDuration != null ? def.waitDuration : 0.15,
+        detectTimeMultiplier: 0.9,
+        searchDuration: 2.5,
+      });
+    }
+  }
+
+  // =========================================================================
+  //  HeavyBot — slow, armored, requires 2 bomb hits to destroy (grey)
+  // =========================================================================
+  // Massive, slow-moving unit that blocks corridors.  The inner blast zone
+  // from a single bomb only stuns it; a second bomb destroys it permanently.
+  class HeavyBot extends BaseEnemy {
+    constructor(def) {
+      super({
+        type:        TYPE.HEAVY_BOT,
+        patrol:      def.patrol,
+        speed:       def.speed        != null ? def.speed        : 0.85,
+        visionRange: def.visionRange  != null ? def.visionRange  : 200,
+        visionAngle: def.visionAngle  != null ? def.visionAngle  : Math.PI / 3,
+        waitDuration: def.waitDuration != null ? def.waitDuration : 0.65,
+        detectTimeMultiplier: 0.8,   // detects faster (heightened sensors)
+        searchDuration: 6.0,
+      });
+      this._health = 2; // takes 2 bomb hits
+    }
+
+    // Override destroy(): first hit stuns, second destroys.
+    destroy() {
+      this._health--;
+      if (this._health <= 0) {
+        super.destroy();
+      } else {
+        // First hit: longer-than-normal stun
+        this.disable(DISABLE_DURATION * 2.5);
+      }
+    }
+  }
+  // ── end SnifferBot / FastBot / HeavyBot ──────────────────────────────────
 
 
   // =========================================================================
@@ -788,6 +890,135 @@ const EnemyManager = (() => {
     ctx.fill();
   }
 
+  // ── SnifferBot body — round teal body with sensor antennae ───────────────
+  function _drawSnifferBody(ctx, r, isAlert) {
+    const shadow = isAlert ? '#ff3344' : '#00cc66';
+    const fill   = isAlert ? '#cc2233' : '#006633';
+    ctx.shadowBlur  = isAlert ? 24 : 16;
+    ctx.shadowColor = shadow;
+    // Circular main body
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    // Inner panel
+    ctx.fillStyle = isAlert ? '#550011' : '#003322';
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+    // Sensor "nose" dot
+    ctx.shadowBlur  = 10;
+    ctx.shadowColor = isAlert ? '#ff0000' : '#00ffaa';
+    ctx.fillStyle   = isAlert ? '#ff2244' : '#00ffaa';
+    ctx.beginPath();
+    ctx.arc(r * 0.82, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+    // Two sensor antennae
+    ctx.strokeStyle = isAlert ? '#ff4466' : '#44ffcc';
+    ctx.lineWidth   = 1.5;
+    ctx.shadowBlur  = 5;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.3, -r * 0.55);
+    ctx.lineTo(-r * 0.5, -r * 1.2);
+    ctx.moveTo( r * 0.3, -r * 0.55);
+    ctx.lineTo( r * 0.5, -r * 1.2);
+    ctx.stroke();
+    ctx.fillStyle = isAlert ? '#ff6688' : '#aaffee';
+    ctx.beginPath();
+    ctx.arc(-r * 0.5, -r * 1.2, 2.5, 0, Math.PI * 2);
+    ctx.arc( r * 0.5, -r * 1.2, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── FastBot body — sleek elongated hexagonal shape (yellow/white) ─────────
+  function _drawFastBody(ctx, r, isAlert) {
+    const shadow = isAlert ? '#ff3344' : '#eecc00';
+    const fill   = isAlert ? '#cc2233' : '#aa8800';
+    ctx.shadowBlur  = isAlert ? 26 : 18;
+    ctx.shadowColor = shadow;
+    // Elongated hexagonal body (stretched forward)
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo( r * 1.15,  0);
+    ctx.lineTo( r * 0.5,  -r * 0.7);
+    ctx.lineTo(-r * 0.7,  -r * 0.55);
+    ctx.lineTo(-r * 0.85,  0);
+    ctx.lineTo(-r * 0.7,   r * 0.55);
+    ctx.lineTo( r * 0.5,   r * 0.7);
+    ctx.closePath();
+    ctx.fill();
+    // Inner core
+    ctx.fillStyle = isAlert ? '#550011' : '#332200';
+    ctx.beginPath();
+    ctx.roundRect(-r * 0.5, -r * 0.38, r * 1.0, r * 0.76, 3);
+    ctx.fill();
+    // Speed streak lines
+    ctx.strokeStyle = isAlert ? '#ff6688' : '#ffdd44';
+    ctx.lineWidth   = 1.5;
+    ctx.shadowBlur  = 5;
+    ctx.shadowColor = isAlert ? '#ff4466' : '#ffee00';
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.8, -r * 0.25); ctx.lineTo(-r * 0.2, -r * 0.25);
+    ctx.moveTo(-r * 0.8,  0);        ctx.lineTo(-r * 0.2,  0);
+    ctx.moveTo(-r * 0.8,  r * 0.25); ctx.lineTo(-r * 0.2,  r * 0.25);
+    ctx.stroke();
+    // Forward dot
+    ctx.fillStyle = isAlert ? '#ff2244' : '#ffee00';
+    ctx.shadowBlur  = 10;
+    ctx.shadowColor = isAlert ? '#ff0000' : '#ffee00';
+    ctx.beginPath();
+    ctx.arc(r * 0.95, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── HeavyBot body — large armored square (dark grey) ─────────────────────
+  function _drawHeavyBody(ctx, r, isAlert, health) {
+    const rBig    = r * 1.45; // larger than standard
+    const damaged = health !== undefined && health < 2;
+    const shadow  = isAlert ? '#ff3344' : (damaged ? '#ff6600' : '#888888');
+    const fill    = isAlert ? '#cc2233' : (damaged ? '#553311' : '#2a2a2a');
+    ctx.shadowBlur  = isAlert ? 28 : 18;
+    ctx.shadowColor = shadow;
+    // Large armored body
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.roundRect(-rBig, -rBig, rBig * 2, rBig * 2, 5);
+    ctx.fill();
+    // Armored panel overlay
+    ctx.fillStyle = isAlert ? '#550011' : (damaged ? '#3a2200' : '#1a1a1a');
+    ctx.beginPath();
+    ctx.roundRect(-rBig * 0.65, -rBig * 0.65, rBig * 1.3, rBig * 1.3, 3);
+    ctx.fill();
+    // Rivets / bolts at corners
+    ctx.fillStyle   = isAlert ? '#ff4455' : (damaged ? '#ff8844' : '#666666');
+    ctx.shadowBlur  = 4;
+    ctx.shadowColor = isAlert ? '#ff2244' : '#444444';
+    for (const [ox, oy] of [[-0.7, -0.7], [0.7, -0.7], [0.7, 0.7], [-0.7, 0.7]]) {
+      ctx.beginPath();
+      ctx.arc(rBig * ox, rBig * oy, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Damage cracks if hit once
+    if (damaged) {
+      ctx.strokeStyle = 'rgba(255,100,0,0.6)';
+      ctx.lineWidth   = 1.5;
+      ctx.shadowBlur  = 6;
+      ctx.shadowColor = '#ff6600';
+      ctx.beginPath();
+      ctx.moveTo(-rBig * 0.3, -rBig * 0.5);
+      ctx.lineTo( rBig * 0.1, 0);
+      ctx.lineTo(-rBig * 0.1,  rBig * 0.4);
+      ctx.stroke();
+    }
+    // Eye (forward indicator)
+    ctx.fillStyle   = isAlert ? '#ff2244' : (damaged ? '#ff8844' : '#aaaaaa');
+    ctx.shadowBlur  = 8;
+    ctx.shadowColor = isAlert ? '#ff0000' : (damaged ? '#ff6600' : '#888888');
+    ctx.beginPath();
+    ctx.arc(rBig * 0.78, 0, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
 
   // =========================================================================
   //  EnemyManager -- public module API
@@ -798,6 +1029,9 @@ const EnemyManager = (() => {
   function _createEnemy(def) {
     if (def.type === TYPE.GUARD_BOT)   return new GuardBot(def);
     if (def.type === TYPE.SCANNER_BOT) return new ScannerBot(def);
+    if (def.type === TYPE.SNIFFER_BOT) return new SnifferBot(def);
+    if (def.type === TYPE.FAST_BOT)    return new FastBot(def);
+    if (def.type === TYPE.HEAVY_BOT)   return new HeavyBot(def);
     return new BaseEnemy(def);
   }
 
