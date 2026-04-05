@@ -478,9 +478,14 @@ const Game = (() => {
   // Returns a copy of def.map with key tiles shuffled to random floor positions
   // inside the zone the player can access without collecting any keys (below all
   // door rows). A BFS from the player start ensures every candidate is reachable.
+  // Keys are biased toward dead-end tiles (corridors with only one exit) to
+  // encourage exploration of side paths rather than obvious open spaces.
   // If fewer candidates than keys exist the original layout is used as fallback.
   function _randomizeKeyPositions(def) {
     const { cols, rows, playerStart, map } = def;
+    // minKeyDist comes from the level config and is forwarded through MapGen's
+    // return value so that key placement tightens with each sector.
+    const minKeyDist = def.minKeyDist ?? 6;
     const T  = Tilemap.TILE;
     const grid = map.slice();
 
@@ -517,7 +522,10 @@ const Game = (() => {
     }
 
     // Collect candidate positions: reachable floor in the accessible zone,
-    // not the player tile, not adjacent to it, and not an ammo pickup tile.
+    // not the player tile, not too close to start, and not an ammo/perk tile.
+    // Also compute a "deadness" score: number of wall neighbours (higher = more
+    // dead-end-like).  Keys are placed preferentially in dead ends so the player
+    // is rewarded for exploring side paths rather than staying on open highways.
     const candidates = [];
     for (let r = lastDoorRow + 1; r < rows - 1; r++) {
       for (let c = 1; c < cols - 1; c++) {
@@ -526,8 +534,16 @@ const Game = (() => {
         if (grid[idx] !== T.FLOOR) continue;
         if (idx === startIdx) continue;
         const manhattanDist = Math.abs(r - playerStart.row) + Math.abs(c - playerStart.col);
-        if (manhattanDist < 2) continue;
-        candidates.push(idx);
+        if (manhattanDist < minKeyDist) continue;
+
+        // Count wall neighbours to score how "dead-end-like" this tile is
+        let wallNeighbours = 0;
+        for (const [dc, dr] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+          const nc = c + dc, nr = r + dr;
+          if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) { wallNeighbours++; continue; }
+          if (grid[nr * cols + nc] === T.WALL) wallNeighbours++;
+        }
+        candidates.push({ idx, wallNeighbours, manhattanDist });
       }
     }
 
@@ -536,15 +552,18 @@ const Game = (() => {
       return map.slice();
     }
 
-    // Fisher-Yates shuffle
-    for (let i = candidates.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-    }
+    // Sort: prefer tiles with more wall neighbours (dead ends) and farther
+    // from the player start.  This biases keys into side pockets and corners.
+    candidates.sort((a, b) =>
+      b.wallNeighbours - a.wallNeighbours ||
+      b.manhattanDist  - a.manhattanDist
+    );
 
-    // Place keys, enforcing a minimum Manhattan spread of 4 tiles between them
+    // Place keys, enforcing a minimum Manhattan spread of 4 tiles between them.
+    // We iterate the sorted list so the best spots (dead ends far from start)
+    // are tried first.
     const placed = [];
-    for (const idx of candidates) {
+    for (const { idx } of candidates) {
       if (placed.length >= keyCount) break;
       const c = idx % cols;
       const r = Math.floor(idx / cols);
@@ -556,7 +575,7 @@ const Game = (() => {
     }
 
     // Relax spread constraint if not enough keys placed
-    for (const idx of candidates) {
+    for (const { idx } of candidates) {
       if (placed.length >= keyCount) break;
       if (!placed.includes(idx)) { placed.push(idx); grid[idx] = T.KEY; }
     }

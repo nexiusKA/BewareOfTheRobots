@@ -24,12 +24,18 @@ const MapGen = (() => {
 
   // ── Public API ───────────────────────────────────────────
 
-  // generate(config) → { cols, rows, map, playerStart, enemies, keyCount }
+  // generate(config) → { cols, rows, map, playerStart, enemies, keyCount, minKeyDist }
   // config: { cols, rows, doorCount, ammoCount, keyCount,
-  //           enemyCount, scannerCount }
+  //           enemyCount, scannerCount,
+  //           extraPassageRate, enemySpeedMult, visionMult, minKeyDist }
   function generate(config) {
     const { cols, rows, doorCount, ammoCount, keyCount,
             enemyCount, scannerCount } = config;
+    // Difficulty tuning fields — all have sensible defaults so old configs work.
+    const extraPassageRate = config.extraPassageRate ?? 0.12;
+    const enemySpeedMult   = config.enemySpeedMult   ?? 1.00;
+    const visionMult       = config.visionMult       ?? 1.00;
+    const minKeyDist       = config.minKeyDist       ?? 6;
 
     // ── 1. All walls ────────────────────────────────────────
     const grid = new Array(cols * rows).fill(W);
@@ -61,7 +67,7 @@ const MapGen = (() => {
     // consecutive doors, and from last door to the bottom border.
     const zoneRanges = _buildZoneRanges(doorRows, rows);
     for (const [r1, r2] of zoneRanges) {
-      _carveMazeZone(grid, cols, r1, r2);
+      _carveMazeZone(grid, cols, r1, r2, extraPassageRate);
     }
 
     // ── 5. Guarantee door connectivity ─────────────────────
@@ -89,9 +95,13 @@ const MapGen = (() => {
     );
 
     // ── 7. Ammo pickups ─────────────────────────────────────
+    // Place ammo near enemy corridor rows (danger zones) so the player
+    // must take a risk to collect it.  Falls back to general placement if
+    // there are not enough corridor-adjacent candidates.
     const playerRow = rows - 2;
     const playerCol = 1;
-    _placePickups(grid, cols, ammoCount, A, mainStart, mainEnd, playerCol, playerRow, 5);
+    _placeAmmoNearCorridors(grid, cols, ammoCount, corridorRows,
+                            mainStart, mainEnd, playerCol, playerRow);
 
     // ── 7b. Demolition perk (one per level) ─────────────────
     _placePickups(grid, cols, 1, P, mainStart, mainEnd, playerCol, playerRow, 6);
@@ -107,7 +117,8 @@ const MapGen = (() => {
     // ── 10. Generate enemy definitions ──────────────────────
     const enemies = _buildEnemies(
       cols, enemyCount, scannerCount,
-      corridorRows, doorRows
+      corridorRows, doorRows,
+      enemySpeedMult, visionMult
     );
 
     return {
@@ -116,6 +127,7 @@ const MapGen = (() => {
       playerStart: { col: playerCol, row: playerRow },
       enemies,
       keyCount,
+      minKeyDist,
     };
   }
 
@@ -137,7 +149,9 @@ const MapGen = (() => {
 
   // Carves a recursive-backtracker maze inside grid columns [1..cols-2]
   // and rows [r1..r2].  Cells live at odd positions within the range.
-  function _carveMazeZone(grid, cols, r1, r2) {
+  // passageRate controls how many extra walls are removed (0 = pure maze,
+  // higher values create more loops and open spaces).
+  function _carveMazeZone(grid, cols, r1, r2, passageRate = 0.12) {
     if (r1 > r2) return;
 
     // If the zone is a single row, just open it entirely.
@@ -189,11 +203,11 @@ const MapGen = (() => {
     // Start DFS from the bottom-left cell of this zone
     dfs(0, cellRows - 1);
 
-    // Extra random passages (≈ 12% of internal walls) to break up dead ends
-    // and give the maze a less "spidery" feel.
+    // Extra random passages to break up dead ends and give the maze a less
+    // "spidery" feel.  The rate is set per-level via config.extraPassageRate.
     for (let r = startRow; r <= endRow; r += 2) {
       for (let ci = 0; ci < cellCols - 1; ci++) {
-        if (Math.random() < 0.12) {
+        if (Math.random() < passageRate) {
           const gc = 1 + 2 * ci;
           grid[r * cols + gc + 1] = F; // remove wall between adjacent cells
         }
@@ -201,7 +215,7 @@ const MapGen = (() => {
     }
     for (let cri = 0; cri < cellRows - 1; cri++) {
       for (let ci = 0; ci < cellCols; ci++) {
-        if (Math.random() < 0.12) {
+        if (Math.random() < passageRate) {
           const gc = 1 + 2 * ci;
           const gr = startRow + 2 * cri;
           grid[(gr + 1) * cols + gc] = F;
@@ -255,13 +269,13 @@ const MapGen = (() => {
 
   // ── Enemy generation ─────────────────────────────────────
 
-  function _buildEnemies(cols, enemyCount, scannerCount, corridorRows, doorRows) {
+  function _buildEnemies(cols, enemyCount, scannerCount, corridorRows, doorRows,
+                         enemySpeedMult = 1.0, visionMult = 1.0) {
     const enemies = [];
     const mainCorridors  = corridorRows.filter(c => c.zone === 'main');
     const upperCorridors = corridorRows.filter(c => c.zone === 'upper');
 
     // Assign patrol enemies to corridors.
-    // Alternate left→right / right→left patrols.
     const allEnemySlots = [];
     for (let i = 0; i < enemyCount; i++) {
       allEnemySlots.push({ type: 'guard_bot', idx: i });
@@ -270,31 +284,94 @@ const MapGen = (() => {
       allEnemySlots.push({ type: 'scanner_bot', idx: i });
     }
 
-    // Distribute enemy slots across corridors (main first, then upper)
+    // Distribute enemy slots across corridors (main first, then upper).
     const corridorCycle = [...mainCorridors, ...upperCorridors];
     if (corridorCycle.length === 0) return enemies;
 
     allEnemySlots.forEach((slot, slotIdx) => {
       const corr  = corridorCycle[slotIdx % corridorCycle.length];
       const row   = corr.row;
-      // Even-indexed patrols go left→right, odd go right→left
-      const ltr   = slotIdx % 2 === 0;
-      const colA  = ltr ? 1          : cols - 2;
-      const colB  = ltr ? cols - 2   : 1;
-
-      const baseSpeed    = 1.60 + 0.08 * slotIdx;
       const isScannerBot = slot.type === 'scanner_bot';
+
+      // ── Patrol style ────────────────────────────────────────
+      // Every third guard_bot patrols only the middle portion of the
+      // corridor (creating an intersection choke-point that the player
+      // must time carefully).  Scanners always do full-width patrols so
+      // their wide vision angle covers the whole corridor.
+      let colA, colB;
+      if (!isScannerBot && slotIdx % 3 === 2 && cols > 20) {
+        // Intersection guard: patrol middle 40% of corridor.
+        // edgeMargin is 30% of cols, leaving the inner 40% as the patrol range.
+        const edgeMargin = Math.floor(cols * 0.30);
+        colA = edgeMargin;
+        colB = cols - 1 - edgeMargin;
+      } else {
+        // Full-width patrol: alternate direction per slot
+        const ltr = slotIdx % 2 === 0;
+        colA = ltr ? 1        : cols - 2;
+        colB = ltr ? cols - 2 : 1;
+      }
+
+      const baseSpeed = (1.60 + 0.08 * slotIdx) * enemySpeedMult;
 
       enemies.push({
         type:        slot.type,
         patrol:      [{ col: colA, row }, { col: colB, row }],
-        speed:       baseSpeed + (isScannerBot ? -0.35 : 0),  // ScannerBot is slower
-        visionRange: isScannerBot ? 260 + (slotIdx % 4) * 10 : 185 + (slotIdx % 4) * 5,
-        visionAngle: isScannerBot ? Math.PI / 2 : Math.PI / 3,
+        speed:       baseSpeed + (isScannerBot ? -0.35 : 0),
+        visionRange: (isScannerBot ? 260 + (slotIdx % 4) * 10
+                                   : 185 + (slotIdx % 4) * 5) * visionMult,
+        visionAngle: (isScannerBot ? Math.PI / 2 : Math.PI / 3) * visionMult,
       });
     });
 
     return enemies;
+  }
+
+  // ── Ammo near danger zones ───────────────────────────────
+
+  // Places ammo crates preferentially on floor tiles that are within
+  // PROXIMITY rows of a highway corridor (where enemies patrol).  This
+  // rewards risk — the player must get close to enemy routes to resupply.
+  // Falls back to general random placement if there are not enough
+  // corridor-adjacent candidates.
+  function _placeAmmoNearCorridors(grid, cols, count, corridorRows,
+                                   r1, r2, playerCol, playerRow) {
+    const PROXIMITY = 2; // tiles above/below a corridor row to consider "near"
+    const MIN_DIST  = 5; // minimum Manhattan distance from player start
+
+    const corridorRowNums = new Set(corridorRows.map(c => c.row));
+
+    // Collect preferred candidates: floor tiles near a corridor row
+    const preferred = [];
+    const fallback  = [];
+    for (let r = r1; r <= r2; r++) {
+      for (let c = 1; c < cols - 1; c++) {
+        if (grid[r * cols + c] !== F) continue;
+        if (Math.abs(r - playerRow) + Math.abs(c - playerCol) < MIN_DIST) continue;
+        let nearCorridor = false;
+        for (let dr = -PROXIMITY; dr <= PROXIMITY; dr++) {
+          if (corridorRowNums.has(r + dr)) { nearCorridor = true; break; }
+        }
+        if (nearCorridor) preferred.push(r * cols + c);
+        else              fallback.push(r * cols + c);
+      }
+    }
+
+    // Shuffle both pools
+    _shuffle(preferred);
+    _shuffle(fallback);
+
+    const pool = [...preferred, ...fallback];
+    for (let i = 0; i < Math.min(count, pool.length); i++) {
+      grid[pool[i]] = A;
+    }
+  }
+
+  function _shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
   }
 
   // ── Pickup placement ─────────────────────────────────────
@@ -310,11 +387,7 @@ const MapGen = (() => {
         candidates.push(r * cols + c);
       }
     }
-    // Fisher-Yates shuffle
-    for (let i = candidates.length - 1; i > 0; i--) {
-      const j = (Math.random() * (i + 1)) | 0;
-      const tmp = candidates[i]; candidates[i] = candidates[j]; candidates[j] = tmp;
-    }
+    _shuffle(candidates);
     for (let i = 0; i < Math.min(count, candidates.length); i++) {
       grid[candidates[i]] = tileType;
     }
