@@ -416,7 +416,7 @@ const Tilemap = (() => {
     const blink = _blinkPhase;
     ctx.fillStyle = `rgba(255,136,0,${0.7 + blink * 0.3})`;
     ctx.fillRect(x + 3, y + 3, s - 6, s - 6);
-    ctx.fillStyle = '#0d0d1f';
+    ctx.fillStyle = '#111827';
     for (let i = 1; i < 4; i++) {
       ctx.fillRect(x + 6, y + (s / 4) * i - 1, s - 12, 2);
     }
