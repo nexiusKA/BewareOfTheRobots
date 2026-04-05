@@ -29,6 +29,17 @@ const MapGen = (() => {
   const K_R = 8;  // KEY_RED
   const K_B = 9;  // KEY_BLUE
   const K_G = 10; // KEY_GREEN
+  // Puzzle tiles
+  const PP = 14; // PRESSURE_PLATE
+  const TD = 15; // TIMED_DOOR
+  const OW = 16; // ONE_WAY_DOOR
+  const CR = 17; // CONVEYOR_RIGHT
+  const CL = 18; // CONVEYOR_LEFT
+  const CU = 19; // CONVEYOR_UP
+  const CD = 20; // CONVEYOR_DOWN
+  const TR = 21; // TRAP
+  const LH = 22; // LASER_EMITTER_H
+  const LV = 23; // LASER_EMITTER_V
 
   // Color sequences (index = player encounter order, 0 = first door hit)
   const _DOOR_COLOR_TILES = [D, D_R, D_B, D_G];
@@ -174,6 +185,7 @@ const MapGen = (() => {
       enemies,
       keyCount,
       minKeyDist,
+      doorRows, // exposed so game.js can pass to puzzle placement
     };
   }
 
@@ -471,5 +483,205 @@ const MapGen = (() => {
     return lo + 2 * ((Math.random() * count) | 0);
   }
 
-  return { generate };
+  // ── Puzzle element placement ─────────────────────────────
+
+  // The set of "base" tiles considered FLOOR for puzzle placement purposes.
+  const _FLOOR_TILES = new Set([F]);
+  const _KEY_TILES   = new Set([K, K_R, K_B, K_G]);
+
+  // Scale: fraction of keys that get puzzle-gated (0 = none, 1 = all).
+  // Levels start at 0 (level 1 = no puzzles) and ramp up with difficulty.
+  function _puzzleDensity(config) {
+    const em = config.enemySpeedMult || 1.0;
+    // Density: 0 for first level (enemySpeedMult≈0.85), up to 0.9 for hardest
+    if (em < 0.9)  return 0;
+    if (em < 1.0)  return 0.25;
+    if (em < 1.15) return 0.4;
+    if (em < 1.25) return 0.6;
+    return 0.75;
+  }
+
+  function _placePuzzleElements(grid, cols, rows, doorRows, playerCol, playerRow, config) {
+    const density = _puzzleDensity(config);
+    const puzzleLinks = [];
+
+    // ── Find all key positions in the grid ──────────────────
+    const keyPositions = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (_KEY_TILES.has(grid[r * cols + c])) {
+          keyPositions.push({ col: c, row: r });
+        }
+      }
+    }
+    if (keyPositions.length === 0 || density === 0) return puzzleLinks;
+
+    // ── 1. Pressure-plate + door pairs ───────────────────────
+    for (const kp of keyPositions) {
+      if (Math.random() > density) continue;
+
+      // Choose door type: timed (player must move fast) or oneway (permanent)
+      const type     = Math.random() < 0.55 ? 'timed' : 'oneway';
+      const doorTile = type === 'timed' ? TD : OW;
+
+      // Find a floor tile near the key to place the blocking door.
+      const doorPos = _findGateTile(grid, cols, rows, kp, playerRow);
+      if (!doorPos) continue;
+
+      // Find a floor tile between doorPos and player start for the plate.
+      const platePos = _findPlateTile(grid, cols, rows, doorPos, playerRow);
+      if (!platePos) continue;
+
+      // Place tiles and record link.
+      grid[doorPos.row  * cols + doorPos.col]  = doorTile;
+      grid[platePos.row * cols + platePos.col] = PP;
+      puzzleLinks.push({ plate: platePos, door: doorPos, type });
+    }
+
+    // ── 2. Laser emitters ────────────────────────────────────
+    // Place horizontal laser emitters on wall tiles adjacent to wide corridors.
+    // A "wide corridor row" is a row with ≥40 % of interior tiles as floor.
+    const laserMax = Math.max(1, Math.floor(keyPositions.length * density * 0.6));
+    let laserPlaced = 0;
+    for (let r = 3; r < rows - 3 && laserPlaced < laserMax; r++) {
+      if (doorRows.includes(r)) continue;
+      let floorCount = 0;
+      for (let c = 1; c < cols - 1; c++) {
+        if (grid[r * cols + c] === F) floorCount++;
+      }
+      if (floorCount < (cols - 2) * 0.4) continue;
+
+      // Look for a wall tile in this row that has floor on both horizontal sides.
+      for (let c = 3; c < cols - 3; c++) {
+        if (grid[r * cols + c] !== W) continue;
+        if (grid[r * cols + c - 1] === F && grid[r * cols + c + 1] === F) {
+          // Ensure beam would reach ≥2 floor tiles on each side before hitting a wall.
+          let leftFloors = 0, rightFloors = 0;
+          for (let dc = -1; dc >= -4; dc--) {
+            if (c + dc < 1 || grid[r * cols + c + dc] !== F) break;
+            leftFloors++;
+          }
+          for (let dc = 1; dc <= 4; dc++) {
+            if (c + dc >= cols - 1 || grid[r * cols + c + dc] !== F) break;
+            rightFloors++;
+          }
+          if (leftFloors >= 1 && rightFloors >= 1) {
+            grid[r * cols + c] = LH;
+            laserPlaced++;
+            break;
+          }
+        }
+      }
+    }
+
+    // ── 3. Conveyor tiles ────────────────────────────────────
+    const convMax     = Math.max(2, Math.floor(cols * rows * density * 0.003));
+    const convDirs    = [CR, CL, CU, CD];
+    let convPlaced    = 0;
+
+    for (let attempts = 0; attempts < 200 && convPlaced < convMax; attempts++) {
+      const r = 2 + ((Math.random() * (rows - 4)) | 0);
+      const c = 1 + ((Math.random() * (cols - 2)) | 0);
+      if (grid[r * cols + c] !== F) continue;
+      // Don't place conveyors too close to player start.
+      if (Math.abs(r - playerRow) + Math.abs(c - playerCol) < 6) continue;
+      // Don't place directly adjacent to keys (preserve key readability).
+      let nearKey = false;
+      for (const kp of keyPositions) {
+        if (Math.abs(kp.row - r) + Math.abs(kp.col - c) < 2) { nearKey = true; break; }
+      }
+      if (nearKey) continue;
+
+      grid[r * cols + c] = convDirs[(Math.random() * 4) | 0];
+      convPlaced++;
+    }
+
+    // ── 4. Trap tiles ────────────────────────────────────────
+    // Place one trap per key as an adjacent floor hazard (beside the key, not
+    // on the path toward it so the player triggers it when grabbing the key).
+    for (const kp of keyPositions) {
+      if (Math.random() > density) continue;
+      // Collect floor neighbours of the key.
+      const neighbours = [];
+      for (const [dc, dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nc = kp.col + dc, nr = kp.row + dr;
+        if (nc < 1 || nc >= cols - 1 || nr < 2 || nr >= rows - 1) continue;
+        if (grid[nr * cols + nc] === F) neighbours.push({ col: nc, row: nr });
+      }
+      if (neighbours.length > 0) {
+        const tp = neighbours[(Math.random() * neighbours.length) | 0];
+        grid[tp.row * cols + tp.col] = TR;
+      }
+    }
+
+    return puzzleLinks;
+  }
+
+  // Find a floor tile adjacent-to or near the key to serve as a blocking door.
+  // Prefers tiles that are between the key and player (row >= kp.row, since
+  // the player starts at the bottom = highest row index).
+  function _findGateTile(grid, cols, rows, kp, playerRow) {
+    const { col: kc, row: kr } = kp;
+
+    // Search in Manhattan shells outward from the key.
+    for (let dist = 1; dist <= 5; dist++) {
+      const candidates = [];
+      for (let dr = -dist; dr <= dist; dr++) {
+        for (let dc = -(dist - Math.abs(dr)); dc <= (dist - Math.abs(dr)); dc += Math.max(1, dist - Math.abs(dr)) * 2 || 1) {
+          const r = kr + dr;
+          const c = kc + dc;
+          if (r < 2 || r >= rows - 1 || c < 1 || c >= cols - 1) continue;
+          if (grid[r * cols + c] !== F) continue;
+          if (r < kr) continue; // Must be on player side (below the key)
+          candidates.push({ col: c, row: r });
+        }
+      }
+      // Also check exact Manhattan shell to be thorough.
+      for (let dr = -dist; dr <= dist; dr++) {
+        for (let dc = -dist; dc <= dist; dc++) {
+          if (Math.abs(dr) + Math.abs(dc) !== dist) continue;
+          const r = kr + dr;
+          const c = kc + dc;
+          if (r < 2 || r >= rows - 1 || c < 1 || c >= cols - 1) continue;
+          if (grid[r * cols + c] !== F) continue;
+          if (r < kr) continue;
+          if (!candidates.some(ca => ca.col === c && ca.row === r)) {
+            candidates.push({ col: c, row: r });
+          }
+        }
+      }
+      if (candidates.length > 0) {
+        // Prefer tiles closer to player (higher row).
+        candidates.sort((a, b) => b.row - a.row);
+        return candidates[0];
+      }
+    }
+    return null;
+  }
+
+  // Find a floor tile "between" the door and the player start to place the plate.
+  // The plate must be reachable before the door and provide a puzzle.
+  function _findPlateTile(grid, cols, rows, doorPos, playerRow) {
+    const { col: dc, row: dr } = doorPos;
+    const candidates = [];
+
+    // Search tiles below (toward player) the door.
+    for (let r = dr + 1; r < rows - 1; r++) {
+      for (let c = 1; c < cols - 1; c++) {
+        if (grid[r * cols + c] !== F) continue;
+        const mDist = Math.abs(r - dr) + Math.abs(c - dc);
+        if (mDist < 2 || mDist > 12) continue;
+        candidates.push({ col: c, row: r, mDist });
+      }
+    }
+    if (candidates.length === 0) return null;
+
+    _shuffle(candidates);
+    // Pick a candidate in the mid-range of distances for best puzzle layout.
+    candidates.sort((a, b) => a.mDist - b.mDist);
+    const idx = Math.min(candidates.length - 1, Math.floor(candidates.length * 0.35));
+    return candidates[idx];
+  }
+
+  return { generate, addPuzzleElements: _placePuzzleElements };
 })();

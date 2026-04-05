@@ -95,9 +95,8 @@ const EnemyManager = (() => {
   const METER_HUE_MAX = 30;
 
   // ── Shared tunable config (debug panel) ──────────────────────────────────
-  // 0.8 s gives the player a clear, fair window to react to the rising meter.
-  // The original 0.2 s value was too fast for readable stealth gameplay.
-  let _detectTime = 0.5;  // seconds of continuous visibility to fill the meter
+  // 0.3 s gives quick detection while still being perceptible to the player.
+  let _detectTime = 0.3;  // seconds of continuous visibility to fill the meter
   let _coneScale  = 0.70; // multiplier applied to visionRange and visionAngle
 
   function setDetectTime(t) { _detectTime = Utils.clamp(+t || 0.5, 0.05, 30); }
