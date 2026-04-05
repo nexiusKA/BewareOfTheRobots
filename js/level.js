@@ -50,26 +50,46 @@ const Levels = (() => {
       extraPassageRate: 0.18, enemySpeedMult: 0.88, visionMult: 0.88,
       minKeyDist: 8 },
 
-    // ── Sector 4: Sniffer introduced — detects through walls ─────────────────
-    { cols: 42, rows: 32, startBombs: 2, keyCount: 2, doorCount: 2,
-      ammoCount: 3, enemyCount: 5, scannerCount: 1,
-      snifferCount: 1, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.12, enemySpeedMult: 1.05, visionMult: 1.05,
-      minKeyDist: 10 },
+    // ── Sector 4: Pressure Plate Intro — plate → gate → key flow ──────────────
+    // Medium map with one key-door phase and two GuardBots.
+    // A one-way gate (tile: ONE_WAY_DOOR/OW) blocks access to the key area;
+    // a pressure plate nearby opens it permanently.  No lasers, conveyors,
+    // or traps so the new mechanic reads clearly.  After grabbing the key and
+    // unlocking the main door the player still faces one guarded corridor before
+    // the exit.
+    { cols: 32, rows: 26, startBombs: 1, keyCount: 1, doorCount: 1,
+      ammoCount: 1, enemyCount: 2, scannerCount: 0,
+      snifferCount: 0, fastCount: 0, heavyCount: 0,
+      extraPassageRate: 0.22, enemySpeedMult: 0.93, visionMult: 0.92,
+      minKeyDist: 10,
+      puzzleDensityOverride: 1.0, puzzleDoorType: 'oneway',
+      puzzleNoLasers: true, puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 5: Three zones — FastBot adds pressure ─────────────────────────
-    { cols: 44, rows: 32, startBombs: 2, keyCount: 3, doorCount: 3,
-      ammoCount: 4, enemyCount: 6, scannerCount: 1,
-      snifferCount: 1, fastCount: 1, heavyCount: 0,
-      extraPassageRate: 0.10, enemySpeedMult: 1.10, visionMult: 1.10,
-      minKeyDist: 11 },
+    // ── Sector 5: Laser System Intro — disable emitters, reach the key ────────
+    // Wider map with a different aspect ratio.  Laser beams cross corridors on
+    // the route to the key.  One GuardBot + one ScannerBot add pressure while
+    // the player bombs emitters or routes around them.  Pressure-plate gates
+    // are still present so both mechanics appear together.
+    { cols: 36, rows: 26, startBombs: 1, keyCount: 1, doorCount: 1,
+      ammoCount: 2, enemyCount: 1, scannerCount: 1,
+      snifferCount: 0, fastCount: 0, heavyCount: 0,
+      extraPassageRate: 0.20, enemySpeedMult: 0.98, visionMult: 0.96,
+      minKeyDist: 11,
+      puzzleDensityOverride: 0.85,
+      puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 6: High patrol density — all three color doors ────────────────
-    { cols: 46, rows: 34, startBombs: 2, keyCount: 3, doorCount: 3,
-      ammoCount: 4, enemyCount: 6, scannerCount: 1,
-      snifferCount: 1, fastCount: 1, heavyCount: 0,
-      extraPassageRate: 0.09, enemySpeedMult: 1.15, visionMult: 1.15,
-      minKeyDist: 12 },
+    // ── Sector 6: Timed Door + Multi-Stage Planning ───────────────────────────
+    // Two-door map.  Both keys are gated by timed doors: the player must step
+    // on each pressure plate and move through the opening before it closes.
+    // Two GuardBots and a ScannerBot make every dash dangerous.  The larger
+    // map means planning the route — not just raw speed — decides success.
+    { cols: 38, rows: 28, startBombs: 1, keyCount: 2, doorCount: 2,
+      ammoCount: 2, enemyCount: 2, scannerCount: 1,
+      snifferCount: 0, fastCount: 0, heavyCount: 0,
+      extraPassageRate: 0.18, enemySpeedMult: 1.02, visionMult: 1.00,
+      minKeyDist: 11,
+      puzzleDensityOverride: 0.9, puzzleDoorType: 'timed',
+      puzzleNoConveyors: true, puzzleNoTraps: true },
 
     // ── Sector 7: Heavy Bot — first armored enemy ─────────────────────────────
     { cols: 48, rows: 36, startBombs: 1, keyCount: 3, doorCount: 3,
