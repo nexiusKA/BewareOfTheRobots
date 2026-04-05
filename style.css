@@ -29,7 +29,165 @@ body {
   image-rendering: pixelated;
 }
 
-/* ── Overlay ──────────────────────────────────────────────── */
+/* ── Start Menu (compact card) ────────────────────────────── */
+#start-menu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(5, 5, 20, 0.72);
+  backdrop-filter: blur(3px);
+  z-index: 10;
+  animation: startMenuFadeIn 0.25s ease forwards;
+}
+
+#start-menu.hidden {
+  display: none;
+  animation: none;
+}
+
+#start-menu.menu-fading-out {
+  animation: startMenuFadeOut 0.3s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes startMenuFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes startMenuFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+#start-menu-card {
+  background: rgba(8, 8, 26, 0.95);
+  border: 1px solid rgba(0, 255, 204, 0.38);
+  border-radius: 16px;
+  padding: 1.8rem 2rem 1.4rem;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(0, 255, 204, 0.06),
+    0 0 36px rgba(0, 255, 204, 0.18),
+    0 14px 48px rgba(0, 0, 0, 0.72);
+  animation: startMenuCardIn 0.35s cubic-bezier(0.34, 1.26, 0.64, 1) forwards;
+}
+
+@keyframes startMenuCardIn {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #start-menu,
+  #start-menu-card {
+    animation: none;
+  }
+}
+
+#start-menu-title {
+  font-size: 1.05rem;
+  font-weight: bold;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #00ffcc;
+  text-shadow: 0 0 14px rgba(0, 255, 204, 0.65);
+  margin-bottom: 0.3rem;
+  line-height: 1.4;
+}
+
+#start-menu-sub {
+  font-size: 0.7rem;
+  letter-spacing: 1.2px;
+  color: rgba(0, 255, 204, 0.45);
+  margin-bottom: 1.5rem;
+}
+
+#start-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1.2rem;
+}
+
+#start-menu-play-btn {
+  background: rgba(0, 255, 204, 0.10);
+  border: 2px solid rgba(0, 255, 204, 0.58);
+  border-radius: 10px;
+  color: #00ffcc;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 4px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 255, 204, 0.55);
+  transition: background 0.15s, box-shadow 0.15s;
+  min-height: 50px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#start-menu-play-btn:hover,
+#start-menu-play-btn:focus {
+  background: rgba(0, 255, 204, 0.20);
+  box-shadow: 0 0 18px rgba(0, 255, 204, 0.40);
+  outline: none;
+}
+
+#start-menu-play-btn:active {
+  background: rgba(0, 255, 204, 0.30);
+}
+
+#start-menu-play-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#start-menu-sound-btn {
+  background: transparent;
+  border: 1px solid rgba(0, 255, 204, 0.22);
+  border-radius: 8px;
+  color: rgba(0, 255, 204, 0.50);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.76rem;
+  letter-spacing: 1.5px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#start-menu-sound-btn:hover,
+#start-menu-sound-btn:focus {
+  background: rgba(0, 255, 204, 0.07);
+  color: rgba(0, 255, 204, 0.82);
+  border-color: rgba(0, 255, 204, 0.42);
+  outline: none;
+}
+
+#start-menu-sound-btn.menu-btn-muted {
+  color: rgba(180, 180, 200, 0.38);
+  border-color: rgba(180, 180, 200, 0.18);
+}
+
+#start-menu-build {
+  font-size: 0.62rem;
+  letter-spacing: 0.8px;
+  color: rgba(0, 255, 204, 0.25);
+  font-family: 'Courier New', Courier, monospace;
+  word-break: break-all;
+}
+
+
 #overlay {
   position: absolute;
   inset: 0;

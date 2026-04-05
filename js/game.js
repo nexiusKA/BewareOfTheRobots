@@ -80,7 +80,7 @@ const Game = (() => {
     if (_csInput)  _csInput.addEventListener('keydown', _stopAndApplyOnEnter);
 
     _loadLevel(_currentLevel);
-    UI.showStart(Levels.count(), _onStart);
+    Menu.show(_onStart);
   }
 
   function _applyDebugSettings() {
@@ -91,7 +91,6 @@ const Game = (() => {
   }
 
   function _onStart() {
-    UI.hide();
     _startLevel(_currentLevel);
   }
 
