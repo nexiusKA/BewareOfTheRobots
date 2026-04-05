@@ -219,5 +219,6 @@ const Fullscreen = (function () {
     enter:          enterFullscreen,
     exit:           exitFullscreen,
     toggle:         toggleFullscreen,
+    enterPseudo:    _enterPseudo,
   };
 })();
