@@ -59,10 +59,6 @@ const BombManager = (() => {
           if (typeof PuzzleManager !== 'undefined') {
             PuzzleManager.onBombBlast(b.px, b.py, b.radius);
           }
-          if (Player.hasDemolition()) {
-            Tilemap.destroyAdjacentWalls(b.px, b.py);
-            Player.consumeDemolition();
-          }
           _spawnExplosionParticles(b.px, b.py);
           Sound.bombDetonate();
         }
