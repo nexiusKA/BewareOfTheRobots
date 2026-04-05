@@ -81,6 +81,10 @@ const EnemyManager = (() => {
   // Extra fog-reveal radius (tiles) around the player.
   const FOG_PEEK_RADIUS = 2;
 
+  // Fraction of blast radius within which enemies are destroyed outright.
+  // Enemies between this fraction and 1.0 of the radius are disabled instead.
+  const INNER_BLAST_ZONE_RATIO = 0.5;
+
   // Seconds an enemy remains disabled after being hit by a bomb's outer blast zone.
   const DISABLE_DURATION = 4;
 
@@ -622,8 +626,9 @@ const EnemyManager = (() => {
     ctx.fill();
 
     // Pulsing cyan ring — visual indicator that the enemy is stunned
-    ctx.globalAlpha = 0.55 + pulse * 0.35;
-    ctx.strokeStyle = `rgba(0,200,255,${0.55 + pulse * 0.35})`;
+    const ringAlpha = 0.55 + pulse * 0.35;
+    ctx.globalAlpha = ringAlpha;
+    ctx.strokeStyle = `rgba(0,200,255,${ringAlpha})`;
     ctx.lineWidth   = 2.5;
     ctx.shadowBlur  = 10 + pulse * 10;
     ctx.shadowColor = '#00ccff';
@@ -876,7 +881,7 @@ const EnemyManager = (() => {
   //   outer half of radius → temporarily disabled for DISABLE_DURATION seconds
   // This is the primary API for bomb detonations.
   function applyBlastInRadius(px, py, radius) {
-    const destroyR  = radius * 0.5;
+    const destroyR  = radius * INNER_BLAST_ZONE_RATIO;
     const destroyR2 = destroyR * destroyR;
     const blastR2   = radius * radius;
     for (const e of _enemies) {
