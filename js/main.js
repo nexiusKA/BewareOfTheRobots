@@ -90,6 +90,35 @@
   _setupActionButton('dpad-fog',     'KeyF');
   _setupActionButton('dpad-debug',   null, '#');
 
+  // ── Fullscreen wiring ──────────────────────────────────────
+  // Both the start-menu button and the in-game dpad button call
+  // Fullscreen.toggle() directly from a user-gesture handler so the
+  // browser allows the fullscreen request.
+  (function () {
+    const menuBtn = document.getElementById('start-menu-fs-btn');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        Fullscreen.toggle();
+      });
+    }
+
+    // Dpad fullscreen button uses pointerdown (consistent with other dpad
+    // action buttons) so the user gesture is recognised on all mobile browsers.
+    const dpadFsBtn = document.getElementById('dpad-fullscreen');
+    if (dpadFsBtn) {
+      function onDpadFsRelease() { dpadFsBtn.classList.remove('dpad-pressed'); }
+      dpadFsBtn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        Fullscreen.toggle();
+        dpadFsBtn.classList.add('dpad-pressed');
+      });
+      dpadFsBtn.addEventListener('pointerup',     onDpadFsRelease);
+      dpadFsBtn.addEventListener('pointercancel', onDpadFsRelease);
+      dpadFsBtn.addEventListener('pointerleave',  onDpadFsRelease);
+    }
+  })();
+
   // ── Mobile D-pad menu toggle ───────────────────────────────
   const _dpad = document.getElementById('dpad');
   const MOBILE_KEY = 'dpad_enabled';

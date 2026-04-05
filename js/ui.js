@@ -320,11 +320,6 @@ const UI = (() => {
 
     ctx.font        = 'bold 13px Courier New';
     ctx.shadowBlur  = 0;
-    ctx.textAlign   = 'center';
-    ctx.font        = '9px Courier New';
-    ctx.fillStyle   = `${accent}70`;
-    ctx.fillText(`${_hudTotalKeys} KEYS FOUND`, canvasW / 2, y0 + barH / 2 + 10);
-    ctx.font        = 'bold 13px Courier New';
 
     // Bombs — flash green on collect + scale-pop animation
     const bombColor = _hudAmmoFlash > 0
