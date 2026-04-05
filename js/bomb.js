@@ -12,11 +12,21 @@ const BombManager = (() => {
   let _bombs     = [];
   let _particles = [];
   let _fuseTimer = 0; // internal clock for fuse pulse animation
+  let _pendingExplosion = false; // set true when any bomb detonates this frame
 
   function init() {
     _bombs     = [];
     _particles = [];
     _fuseTimer = 0;
+    _pendingExplosion = false;
+  }
+
+  // Consume the explosion-shake signal; returns true if a bomb detonated since
+  // the last call and resets the flag.
+  function takeExplosionShake() {
+    const v = _pendingExplosion;
+    _pendingExplosion = false;
+    return v;
   }
 
   // Place a bomb at pixel position (px, py)
@@ -29,6 +39,7 @@ const BombManager = (() => {
       explodeTimer: 0,
       radius:       EXPLODE_RADIUS,
     });
+    _spawnPlacementParticles(px, py);
   }
 
   function update(dt) {
@@ -43,6 +54,7 @@ const BombManager = (() => {
           // Detonate
           b.exploding    = true;
           b.explodeTimer = EXPLODE_DURATION;
+          _pendingExplosion = true;
           EnemyManager.applyBlastInRadius(b.px, b.py, b.radius);
           if (Player.hasDemolition()) {
             Tilemap.destroyAdjacentWalls(b.px, b.py);
@@ -69,6 +81,25 @@ const BombManager = (() => {
       p.vx *= damp;
       p.vy *= damp;
       if (p.life <= 0) _particles.splice(i, 1);
+    }
+  }
+
+  function _spawnPlacementParticles(px, py) {
+    const colors = ['#00ff88', '#ffffff', '#88ffcc', '#ffee44'];
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+      const speed = 30 + Math.random() * 60;
+      const life  = 0.2 + Math.random() * 0.2;
+      _particles.push({
+        x: px, y: py,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life,
+        maxLife: life,
+        size: 1.5 + Math.random() * 2.5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        placement: true,
+      });
     }
   }
 
@@ -194,5 +225,5 @@ const BombManager = (() => {
 
   function getBombs() { return _bombs; }
 
-  return { init, placeBomb, update, draw, getBombs };
+  return { init, placeBomb, update, draw, getBombs, takeExplosionShake };
 })();

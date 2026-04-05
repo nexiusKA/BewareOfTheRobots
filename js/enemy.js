@@ -448,9 +448,17 @@ const EnemyManager = (() => {
       ctx.closePath();
       ctx.fillStyle   = grad;
       ctx.fill();
+
+      // Cone edge outline — thicker and brighter in alert state
+      const isAlertState = this.state === STATE.ALERT;
       ctx.strokeStyle = this._coneOutlineColor();
-      ctx.lineWidth   = 1;
+      ctx.lineWidth   = isAlertState ? 2 : 1;
+      if (isAlertState) {
+        ctx.shadowBlur  = 6;
+        ctx.shadowColor = 'rgba(255,50,50,0.8)';
+      }
       ctx.stroke();
+      if (isAlertState) ctx.shadowBlur = 0;
       ctx.restore();
 
       // In debug mode, also draw the full detection radius as a dashed circle.

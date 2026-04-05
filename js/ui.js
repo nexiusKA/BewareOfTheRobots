@@ -156,6 +156,9 @@ const UI = (() => {
   // ── HUD (drawn on canvas) ────────────────────────────────
   let _hudFlash = 0;   // key-collected flash timer
   let _hudAmmoFlash = 0; // ammo-collected flash timer
+  let _keyPopTimer  = 0; // scale-pop animation on key pickup
+  let _ammoPopTimer = 0; // scale-pop animation on ammo pickup
+  const POP_DURATION = 0.25;
   let _hudKeyCount = 0;
   let _hudTotalKeys = 0;
   let _hudLevel = 1;
@@ -178,16 +181,20 @@ const UI = (() => {
   }
 
   function flashKeyCollect() {
-    _hudFlash = 0.5;
+    _hudFlash    = 0.5;
+    _keyPopTimer = POP_DURATION;
   }
 
   function flashAmmoCollect() {
     _hudAmmoFlash = 0.5;
+    _ammoPopTimer = POP_DURATION;
   }
 
   function update(dt) {
-    if (_hudFlash > 0) _hudFlash -= dt;
+    if (_hudFlash > 0)    _hudFlash    -= dt;
     if (_hudAmmoFlash > 0) _hudAmmoFlash -= dt;
+    if (_keyPopTimer > 0)  _keyPopTimer  -= dt;
+    if (_ammoPopTimer > 0) _ammoPopTimer -= dt;
     if (_dangerLevel >= DANGER_THRESHOLD) {
       _dangerPulse += dt;
     } else {
@@ -235,7 +242,7 @@ const UI = (() => {
       ctx.font      = 'bold 13px Courier New';
     }
 
-    // Keys — flash yellow on collect
+    // Keys — flash yellow on collect + scale-pop animation
     const keyColor = _hudFlash > 0
       ? `rgba(255,238,0,${0.6 + (_hudFlash / 0.5) * 0.4})`
       : '#ffee00';
@@ -245,14 +252,24 @@ const UI = (() => {
     ctx.textAlign   = 'center';
     const centerX   = canvasW / 2;
     ctx.font        = 'bold 13px Courier New';
-    ctx.fillText(`KEY ${_hudKeyCount > 0 ? '⬡'.repeat(_hudKeyCount) : '—'}`, centerX - 50, y0 + barH / 2 - 5);
+    {
+      const keyTx = centerX - 50, keyTy = y0 + barH / 2 - 5;
+      const keyPop = _keyPopTimer > 0
+        ? 1 + Math.sin((_keyPopTimer / POP_DURATION) * Math.PI) * 0.25
+        : 1;
+      ctx.save();
+      ctx.translate(keyTx, keyTy);
+      ctx.scale(keyPop, keyPop);
+      ctx.fillText(`KEY ${_hudKeyCount > 0 ? '⬡'.repeat(_hudKeyCount) : '—'}`, 0, 0);
+      ctx.restore();
+    }
     ctx.font        = '10px Courier New';
     ctx.shadowBlur  = 0;
     ctx.fillStyle   = `${keyColor}99`;
     ctx.fillText(`${_hudTotalKeys} PICKED UP`, centerX - 50, y0 + barH / 2 + 9);
     ctx.font        = 'bold 13px Courier New';
 
-    // Bombs — flash green on collect
+    // Bombs — flash green on collect + scale-pop animation
     const bombColor = _hudAmmoFlash > 0
       ? `rgba(0,255,136,${0.6 + (_hudAmmoFlash / 0.5) * 0.4})`
       : (_hudBombs === 0 ? 'rgba(150,150,150,0.5)' : '#00ff88');
@@ -260,7 +277,17 @@ const UI = (() => {
     ctx.shadowColor = bombColor;
     ctx.shadowBlur  = 6;
     const bombDots  = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
-    ctx.fillText(`💣 ${bombDots}`, centerX + 60, y0 + barH / 2);
+    {
+      const bombTx = centerX + 60, bombTy = y0 + barH / 2;
+      const bombPop = _ammoPopTimer > 0
+        ? 1 + Math.sin((_ammoPopTimer / POP_DURATION) * Math.PI) * 0.25
+        : 1;
+      ctx.save();
+      ctx.translate(bombTx, bombTy);
+      ctx.scale(bombPop, bombPop);
+      ctx.fillText(`💣 ${bombDots}`, 0, 0);
+      ctx.restore();
+    }
 
     // Hints — right-aligned, two lines
     ctx.shadowBlur  = 0;
