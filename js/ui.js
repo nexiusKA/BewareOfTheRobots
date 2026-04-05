@@ -213,11 +213,11 @@ const UI = (() => {
     const y0   = 0;
 
     // Theme accent colour (falls back to default cyan)
-    const accent = _theme ? _theme.hudColor : '#00ffcc';
-    const border = _theme ? _theme.hudBorder : 'rgba(0,255,204,0.2)';
+    const accent = _theme ? _theme.hudColor : '#22D3EE';
+    const border = _theme ? _theme.hudBorder : 'rgba(34,211,238,0.2)';
 
     // HUD background bar
-    ctx.fillStyle   = 'rgba(5,5,20,0.82)';
+    ctx.fillStyle   = 'rgba(17,24,39,0.88)';
     ctx.fillRect(0, y0, canvasW, barH);
     ctx.strokeStyle = border;
     ctx.lineWidth   = 1;
@@ -244,8 +244,8 @@ const UI = (() => {
 
     // Keys — flash yellow on collect + scale-pop animation
     const keyColor = _hudFlash > 0
-      ? `rgba(255,238,0,${0.6 + (_hudFlash / 0.5) * 0.4})`
-      : '#ffee00';
+      ? `rgba(250,204,21,${0.6 + (_hudFlash / 0.5) * 0.4})`
+      : '#FACC15';
     ctx.fillStyle   = keyColor;
     ctx.shadowColor = keyColor;
     ctx.shadowBlur  = 6;
@@ -271,8 +271,8 @@ const UI = (() => {
 
     // Bombs — flash green on collect + scale-pop animation
     const bombColor = _hudAmmoFlash > 0
-      ? `rgba(0,255,136,${0.6 + (_hudAmmoFlash / 0.5) * 0.4})`
-      : (_hudBombs === 0 ? 'rgba(150,150,150,0.5)' : '#00ff88');
+      ? `rgba(74,222,128,${0.6 + (_hudAmmoFlash / 0.5) * 0.4})`
+      : (_hudBombs === 0 ? 'rgba(156,163,175,0.5)' : '#4ADE80');
     ctx.fillStyle   = bombColor;
     ctx.shadowColor = bombColor;
     ctx.shadowBlur  = 6;
@@ -397,12 +397,12 @@ const UI = (() => {
     const mmY = canvasH - mmH - MINIMAP_PAD;
 
     // Theme accent for minimap border/label
-    const accent = _theme ? _theme.accentColor : '#00ffcc';
+    const accent = _theme ? _theme.accentColor : '#22D3EE';
 
     ctx.save();
 
     // Background panel
-    ctx.fillStyle   = 'rgba(5,5,20,0.78)';
+    ctx.fillStyle   = 'rgba(17,24,39,0.85)';
     ctx.strokeStyle = `${accent}59`;
     ctx.lineWidth   = 1;
     ctx.fillRect(mmX - 3, mmY - 3, mmW + 6, mmH + 6);
@@ -442,11 +442,11 @@ const UI = (() => {
         } else if (tile === T.DOOR) {
           ctx.fillStyle = '#ff8800';
         } else if (tile === T.KEY) {
-          ctx.fillStyle = debugMode ? '#ffee00' : fc;
+          ctx.fillStyle = debugMode ? '#FACC15' : fc;
         } else if (tile === T.EXIT) {
           ctx.fillStyle = accent;
         } else if (tile === T.AMMO) {
-          ctx.fillStyle = debugMode ? '#00ff88' : fc;
+          ctx.fillStyle = debugMode ? '#4ADE80' : fc;
         } else {
           ctx.fillStyle = fc;
         }
