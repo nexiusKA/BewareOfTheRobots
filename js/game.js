@@ -7,6 +7,7 @@ const Game = (() => {
   const STATE = {
     INTRO:    'intro',
     PLAYING:  'playing',
+    PAUSED:   'paused',
     FAIL:     'fail',
     WIN:      'win',
     GAMEOVER: 'gameover', // all levels beaten
@@ -15,6 +16,35 @@ const Game = (() => {
   let _state = STATE.INTRO;
   let _currentLevel = 0;  // 0-indexed
   let _totalKeysCollected = 0; // keys picked up this level (resets on level load)
+
+  // ── Pause ────────────────────────────────────────────────
+  let _pausedPrevState = null;
+
+  // ── Level timer ──────────────────────────────────────────
+  let _levelTimer = 0; // elapsed seconds this level
+
+  // ── Alert state tracking ─────────────────────────────────
+  let _prevAlertCount = 0; // to detect new alert transitions
+
+  // ── Progress save ────────────────────────────────────────
+  const _SAVE_KEY = 'botr_save';
+
+  function _saveProgress() {
+    try {
+      const prev = _loadProgress();
+      localStorage.setItem(_SAVE_KEY, JSON.stringify({
+        level:    _currentLevel,
+        maxLevel: Math.max(_currentLevel, prev.maxLevel || 0),
+      }));
+    } catch (e) {}
+  }
+
+  function _loadProgress() {
+    try { return JSON.parse(localStorage.getItem(_SAVE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+
+  function getSavedProgress() { return _loadProgress(); }
 
   // ── Canvas / context ─────────────────────────────────────
   let _canvas = null;
@@ -110,7 +140,7 @@ const Game = (() => {
     if (_jumpBtn)  _jumpBtn.addEventListener('click', _jumpToDebugLevel);
 
     _loadLevel(_currentLevel);
-    Menu.show(_onStart);
+    Menu.show(_onStart, _onContinue);
   }
 
   function _applyDebugSettings() {
@@ -130,6 +160,11 @@ const Game = (() => {
 
   function _onStart() {
     _startLevel(_currentLevel);
+  }
+
+  function _onContinue(savedLevel) {
+    _currentLevel = savedLevel;
+    _startLevel(savedLevel);
   }
 
   function _loadLevel(index) {
@@ -201,14 +236,23 @@ const Game = (() => {
     _holdDir   = null;
     _holdTimer = 0;
     _conveyorChain = 0;
+    _levelTimer = 0;
+    _prevAlertCount = 0;
+    // Close pause overlay if open (e.g. after restart from pause)
+    const pauseEl = document.getElementById('pause-overlay');
+    if (pauseEl) pauseEl.classList.add('hidden');
+    _saveProgress();
     Music.play();
   }
+
+  const _KEY_HEX = { yellow: '#ffee00', red: '#ff4455', blue: '#4488ff', green: '#44ff88' };
 
   function _onKeyCollect(col, row, keyColor) {
     _totalKeysCollected++;
     UI.setHUD(_currentLevel + 1, Levels.count(), Player.getColorKeys(), Player.getBombAmmo(), _totalKeysCollected);
     UI.flashKeyCollect(keyColor);
     Sound.keyPickup();
+    UI.spawnFloatText('KEY FOUND', Player.getPx(), Player.getPy() - 30, _KEY_HEX[keyColor] || '#ffee00');
   }
 
   // ── Bomb placement flash (brief screen flash on placement) ─
@@ -217,15 +261,19 @@ const Game = (() => {
   function _onAmmoCollect() {
     UI.setHUD(_currentLevel + 1, Levels.count(), Player.getColorKeys(), Player.getBombAmmo(), _totalKeysCollected);
     UI.flashAmmoCollect();
+    UI.spawnFloatText('+2 AMMO', Player.getPx(), Player.getPy() - 30, '#00ff88');
   }
 
   function _onDoorOpen(col, row) {
     Sound.doorOpen();
     Tilemap.startDoorOpenEffect(col, row);
+    const TS = Tilemap.TILE_SIZE;
+    UI.spawnFloatText('DOOR UNLOCKED', col * TS + TS / 2, row * TS + TS / 2 - 40, '#00ffcc');
   }
 
   function _onExit() {
     _state = STATE.WIN;
+    Sound.levelComplete();
     Music.stop();
     const nextIndex = _currentLevel + 1;
     if (nextIndex >= Levels.count()) {
@@ -238,7 +286,7 @@ const Game = (() => {
       UI.showLevelComplete(_currentLevel + 1, Levels.count(), () => {
         UI.hide();
         _startLevel(nextIndex);
-      });
+      }, _levelTimer);
     }
   }
 
@@ -317,6 +365,14 @@ const Game = (() => {
       UI.hideInfo();
     }
 
+    // Pause toggle — P key or Escape (when info overlay is not open)
+    if (!UI.isInfoVisible() && Input.isPressed('KeyP') && (_state === STATE.PLAYING || _state === STATE.PAUSED)) {
+      togglePause();
+    }
+    if (Input.isPressed('Escape') && !UI.isInfoVisible() && _state === STATE.PLAYING) {
+      _pause();
+    }
+
     // While info overlay is open, pause all game logic
     if (UI.isInfoVisible()) return;
 
@@ -328,6 +384,9 @@ const Game = (() => {
         return;
       }
     }
+
+    // When paused, stop further updates
+    if (_state === STATE.PAUSED) return;
 
     // Camera shake decay — runs on real time regardless of game state so the
     // post-detection shake still plays during FAIL/WIN screens.
@@ -353,6 +412,9 @@ const Game = (() => {
     }
 
     if (_state !== STATE.PLAYING) return;
+
+    // Level timer
+    _levelTimer += rawDt;
 
     // Tilemap animation
     Tilemap.update(dt);
@@ -420,7 +482,8 @@ const Game = (() => {
     if (PuzzleManager.consumeTrapTrigger()) {
       _globalAlert = Math.min(1, _globalAlert + TRAP_ALERT_SPIKE);
       _shakeDur    = Math.max(_shakeDur, SHAKE_DURATION * 0.5);
-      Sound.alarm && Sound.alarm();
+      Sound.alarm();
+      UI.spawnFloatText('TRAP TRIGGERED', Player.getPx(), Player.getPy() - 40, '#ff6600');
     }
 
     // Expand fog exploration to current player position
@@ -441,6 +504,15 @@ const Game = (() => {
     // ── Global alert level ────────────────────────────────────────────────
     // Rise while any enemy is in ALERT state; fall when the coast is clear.
     const alertCount = EnemyManager.getAlertCount();
+
+    // Detect new alert event — spawn warning notification once per alert rise
+    const isNewAlertEvent = alertCount > 0 && _prevAlertCount === 0 && !_debugMode && _graceTimer <= 0;
+    if (isNewAlertEvent) {
+      Sound.alarm();
+      UI.spawnFloatText('⚠ ALERT', Player.getPx(), Player.getPy() - 52, '#ff2244');
+    }
+    _prevAlertCount = alertCount;
+
     if (alertCount > 0) {
       _globalAlert = Math.min(1, _globalAlert + alertCount * ALERT_RISE_RATE * rawDt);
     } else {
@@ -522,6 +594,7 @@ const Game = (() => {
     BombManager.draw(ctx);
     EnemyManager.draw(ctx, _debugMode);
     Player.draw(ctx);
+    UI.drawFloatTexts(ctx);   // floating event labels (KEY FOUND, DOOR UNLOCKED, etc.)
     ctx.restore();
 
     // Fail flash overlay
@@ -677,5 +750,27 @@ const Game = (() => {
     return grid;
   }
 
-  return { init, start };
+  // ── Pause helpers ────────────────────────────────────────
+  function _pause() {
+    if (_state !== STATE.PLAYING) return;
+    _pausedPrevState = STATE.PLAYING;
+    _state = STATE.PAUSED;
+    const el = document.getElementById('pause-overlay');
+    if (el) el.classList.remove('hidden');
+  }
+
+  function _resumeFromPause() {
+    if (_state !== STATE.PAUSED) return;
+    _state = _pausedPrevState || STATE.PLAYING;
+    _pausedPrevState = null;
+    const el = document.getElementById('pause-overlay');
+    if (el) el.classList.add('hidden');
+  }
+
+  function togglePause() {
+    if (_state === STATE.PAUSED) _resumeFromPause();
+    else if (_state === STATE.PLAYING) _pause();
+  }
+
+  return { init, start, togglePause, getSavedProgress };
 })();

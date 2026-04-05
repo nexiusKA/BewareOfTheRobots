@@ -88,14 +88,20 @@ const UI = (() => {
     overlay.classList.remove('hidden');
   }
 
-  function showLevelComplete(levelNum, totalLevels, onNext) {
+  function showLevelComplete(levelNum, totalLevels, onNext, timeSeconds) {
     _clearTheme();
     _applyClass('overlay-win');
     overlayTitle.textContent = 'SECTOR CLEARED';
     const isLast       = levelNum >= totalLevels;
     const nextTheme    = isLast ? null : Themes.get(levelNum);   // levelNum (1-indexed) doubles as the 0-indexed next-level index
     const themeChanged = nextTheme && nextTheme.id !== (_theme ? _theme.id : -1);
-    let msg = `Sector ${levelNum} secured.<br>`;
+    let timeStr = '';
+    if (timeSeconds !== undefined && timeSeconds > 0) {
+      const m = Math.floor(timeSeconds / 60);
+      const s = Math.floor(timeSeconds % 60);
+      timeStr = `  ·  ${m}:${s.toString().padStart(2, '0')}`;
+    }
+    let msg = `Sector ${levelNum} secured${timeStr}.<br>`;
     if (isLast) {
       msg += 'All sectors cleared — mission complete!';
     } else if (themeChanged) {
@@ -227,6 +233,10 @@ const UI = (() => {
       _alertPulse += dt;
     } else {
       _alertPulse = 0;
+    }
+    // Tick floating text labels
+    for (let i = _floatTexts.length - 1; i >= 0; i--) {
+      if ((_floatTexts[i].life -= dt) <= 0) _floatTexts.splice(i, 1);
     }
   }
 
@@ -649,12 +659,51 @@ const UI = (() => {
     ctx.restore();
   }
 
+  // ── Floating text notifications ──────────────────────────────
+  // World-space labels that rise and fade out over key gameplay events.
+  const _floatTexts = [];
+
+  function spawnFloatText(text, worldX, worldY, color) {
+    _floatTexts.push({
+      text,
+      x: worldX,
+      y: worldY,
+      color: color || '#00ffcc',
+      life: 1.4,
+      maxLife: 1.4,
+    });
+  }
+
+  function drawFloatTexts(ctx) {
+    if (_floatTexts.length === 0) return;
+    ctx.save();
+    ctx.font = 'bold 16px Courier New';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const t of _floatTexts) {
+      const progress = 1 - t.life / t.maxLife;
+      const yOff  = progress * 52; // px risen since spawn
+      const alpha = t.life > t.maxLife * 0.5
+        ? 1
+        : t.life / (t.maxLife * 0.5);
+      ctx.globalAlpha = Utils.clamp(alpha, 0, 1);
+      ctx.fillStyle   = t.color;
+      ctx.shadowBlur  = 12;
+      ctx.shadowColor = t.color;
+      ctx.fillText(t.text, t.x, t.y - yOff);
+    }
+    ctx.shadowBlur  = 0;
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
   return {
     showStart, showLevelComplete, showGameOver, showVictory, hide,
     showInfo, hideInfo, isInfoVisible,
     setTheme, setHUD, flashKeyCollect, flashAmmoCollect, setVignette, setDanger,
     setAlertLevel, setFogMode, setGhostMode, setDebugMode,
     update, drawHUD, drawScanlines, drawVignette, drawDangerWarning, drawAlertWarning,
-    drawMinimap, updateMinimap
+    drawMinimap, updateMinimap,
+    spawnFloatText, drawFloatTexts,
   };
 })();
