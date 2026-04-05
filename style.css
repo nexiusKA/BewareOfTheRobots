@@ -736,15 +736,16 @@ body {
   gap: 10px;
 }
 
-/* ── Zone 3: System pad (top-right, below HUD) ───────────── */
+/* ── Zone 3: System pad (bottom-right, above action buttons) ─ */
 #dpad-system {
   position: absolute;
-  top: 66px;  /* below the 56px HUD bar + 10px margin */
-  right: 8px;
+  top: auto;
+  bottom: 122px;  /* above bomb zone: 20px bottom + 90px bomb + 12px gap */
+  right: 4px;
   pointer-events: auto;
   display: grid;
-  grid-template-columns: 44px 44px;
-  grid-template-rows: repeat(4, 44px);
+  grid-template-columns: 48px 48px;
+  grid-template-rows: repeat(4, 48px);
   gap: 5px;
 }
 
@@ -775,14 +776,14 @@ body {
   transform: scale(0.91);
 }
 
-/* System buttons — smaller, less prominent */
+/* System buttons — compact, slightly larger for thumb reachability */
 #dpad-system .dpad-btn {
-  width: 44px;
-  height: 44px;
-  font-size: 1.05rem;
+  width: 48px;
+  height: 48px;
+  font-size: 1.15rem;
   border-width: 1.5px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.58);
+  background: rgba(0, 0, 0, 0.62);
   box-shadow: none;
 }
 
@@ -994,8 +995,9 @@ body.pseudo-fullscreen #game-container {
   }
 
   #dpad-system {
-    top:   max(66px, calc(env(safe-area-inset-top) + 56px + 10px));
-    right: max(8px,  calc(env(safe-area-inset-right) + 4px));
+    /* env() + 12px (bomb safe offset) + 90px (bomb height) + 12px (gap above bomb) */
+    bottom: max(122px, calc(env(safe-area-inset-bottom) + 114px));
+    right:  max(4px,   env(safe-area-inset-right));
   }
 }
 
