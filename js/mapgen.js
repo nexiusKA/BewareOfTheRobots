@@ -66,9 +66,15 @@ const MapGen = (() => {
     // ── 1. All walls ────────────────────────────────────────
     const grid = new Array(cols * rows).fill(W);
 
-    // ── 2. Exit corridor at row 1 ───────────────────────────
+    // ── 2. Exit corridor at rows 1-2 ────────────────────────
+    // Row 1 holds the exit tile.  Row 2 is pre-opened as an approach
+    // corridor so the maze zone (carved from row 3 downward, since the
+    // DFS cell carver only touches odd-numbered rows) always has a floor
+    // path to the exit.  Without this, row 2 stays as solid wall and the
+    // exit is permanently unreachable.
     for (let c = 1; c < cols - 1; c++) grid[1 * cols + c] = F;
     grid[1 * cols + (cols - 2)] = E;
+    for (let c = 1; c < cols - 1; c++) grid[2 * cols + c] = F;
 
     // ── 3. Door barrier rows ────────────────────────────────
     // Spread doorCount barriers evenly across most of the map height,
@@ -492,6 +498,8 @@ const MapGen = (() => {
   // Scale: fraction of keys that get puzzle-gated (0 = none, 1 = all).
   // Levels start at 0 (level 1 = no puzzles) and ramp up with difficulty.
   function _puzzleDensity(config) {
+    // Per-level override takes priority (used by hand-designed puzzle levels).
+    if (config.puzzleDensityOverride !== undefined) return config.puzzleDensityOverride;
     const em = config.enemySpeedMult || 1.0;
     // Density: 0 for first level (enemySpeedMult≈0.85), up to 0.9 for hardest
     if (em < 0.9)  return 0;
@@ -504,6 +512,16 @@ const MapGen = (() => {
   function _placePuzzleElements(grid, cols, rows, doorRows, playerCol, playerRow, config) {
     const density = _puzzleDensity(config);
     const puzzleLinks = [];
+
+    // Per-level flags — allow level configs to restrict which puzzle types appear.
+    // puzzleDoorType:    'timed' | 'oneway' | null (null = random mix)
+    // puzzleNoLasers:    true → skip laser emitter placement
+    // puzzleNoConveyors: true → skip conveyor tile placement
+    // puzzleNoTraps:     true → skip trap tile placement
+    const forcedDoorType  = config.puzzleDoorType    || null;
+    const noLasers        = config.puzzleNoLasers    || false;
+    const noConveyors     = config.puzzleNoConveyors || false;
+    const noTraps         = config.puzzleNoTraps     || false;
 
     // ── Find all key positions in the grid ──────────────────
     const keyPositions = [];
@@ -520,8 +538,8 @@ const MapGen = (() => {
     for (const kp of keyPositions) {
       if (Math.random() > density) continue;
 
-      // Choose door type: timed (player must move fast) or oneway (permanent)
-      const type     = Math.random() < 0.55 ? 'timed' : 'oneway';
+      // Choose door type: forced by level config, or random mix.
+      const type     = forcedDoorType || (Math.random() < 0.55 ? 'timed' : 'oneway');
       const doorTile = type === 'timed' ? TD : OW;
 
       // Find a floor tile near the key to place the blocking door.
@@ -541,76 +559,82 @@ const MapGen = (() => {
     // ── 2. Laser emitters ────────────────────────────────────
     // Place horizontal laser emitters on wall tiles adjacent to wide corridors.
     // A "wide corridor row" is a row with ≥40 % of interior tiles as floor.
-    const laserMax = Math.max(1, Math.floor(keyPositions.length * density * 0.6));
-    let laserPlaced = 0;
-    for (let r = 3; r < rows - 3 && laserPlaced < laserMax; r++) {
-      if (doorRows.includes(r)) continue;
-      let floorCount = 0;
-      for (let c = 1; c < cols - 1; c++) {
-        if (grid[r * cols + c] === F) floorCount++;
-      }
-      if (floorCount < (cols - 2) * 0.4) continue;
+    if (!noLasers) {
+      const laserMax = Math.max(1, Math.floor(keyPositions.length * density * 0.6));
+      let laserPlaced = 0;
+      for (let r = 3; r < rows - 3 && laserPlaced < laserMax; r++) {
+        if (doorRows.includes(r)) continue;
+        let floorCount = 0;
+        for (let c = 1; c < cols - 1; c++) {
+          if (grid[r * cols + c] === F) floorCount++;
+        }
+        if (floorCount < (cols - 2) * 0.4) continue;
 
-      // Look for a wall tile in this row that has floor on both horizontal sides.
-      for (let c = 3; c < cols - 3; c++) {
-        if (grid[r * cols + c] !== W) continue;
-        if (grid[r * cols + c - 1] === F && grid[r * cols + c + 1] === F) {
-          // Ensure beam would reach ≥2 floor tiles on each side before hitting a wall.
-          let leftFloors = 0, rightFloors = 0;
-          for (let dc = -1; dc >= -4; dc--) {
-            if (c + dc < 1 || grid[r * cols + c + dc] !== F) break;
-            leftFloors++;
-          }
-          for (let dc = 1; dc <= 4; dc++) {
-            if (c + dc >= cols - 1 || grid[r * cols + c + dc] !== F) break;
-            rightFloors++;
-          }
-          if (leftFloors >= 1 && rightFloors >= 1) {
-            grid[r * cols + c] = LH;
-            laserPlaced++;
-            break;
+        // Look for a wall tile in this row that has floor on both horizontal sides.
+        for (let c = 3; c < cols - 3; c++) {
+          if (grid[r * cols + c] !== W) continue;
+          if (grid[r * cols + c - 1] === F && grid[r * cols + c + 1] === F) {
+            // Ensure beam would reach ≥2 floor tiles on each side before hitting a wall.
+            let leftFloors = 0, rightFloors = 0;
+            for (let dc = -1; dc >= -4; dc--) {
+              if (c + dc < 1 || grid[r * cols + c + dc] !== F) break;
+              leftFloors++;
+            }
+            for (let dc = 1; dc <= 4; dc++) {
+              if (c + dc >= cols - 1 || grid[r * cols + c + dc] !== F) break;
+              rightFloors++;
+            }
+            if (leftFloors >= 1 && rightFloors >= 1) {
+              grid[r * cols + c] = LH;
+              laserPlaced++;
+              break;
+            }
           }
         }
       }
     }
 
     // ── 3. Conveyor tiles ────────────────────────────────────
-    const convMax     = Math.max(2, Math.floor(cols * rows * density * 0.003));
-    const convDirs    = [CR, CL, CU, CD];
-    let convPlaced    = 0;
+    if (!noConveyors) {
+      const convMax     = Math.max(2, Math.floor(cols * rows * density * 0.003));
+      const convDirs    = [CR, CL, CU, CD];
+      let convPlaced    = 0;
 
-    for (let attempts = 0; attempts < 200 && convPlaced < convMax; attempts++) {
-      const r = 2 + ((Math.random() * (rows - 4)) | 0);
-      const c = 1 + ((Math.random() * (cols - 2)) | 0);
-      if (grid[r * cols + c] !== F) continue;
-      // Don't place conveyors too close to player start.
-      if (Math.abs(r - playerRow) + Math.abs(c - playerCol) < 6) continue;
-      // Don't place directly adjacent to keys (preserve key readability).
-      let nearKey = false;
-      for (const kp of keyPositions) {
-        if (Math.abs(kp.row - r) + Math.abs(kp.col - c) < 2) { nearKey = true; break; }
+      for (let attempts = 0; attempts < 200 && convPlaced < convMax; attempts++) {
+        const r = 2 + ((Math.random() * (rows - 4)) | 0);
+        const c = 1 + ((Math.random() * (cols - 2)) | 0);
+        if (grid[r * cols + c] !== F) continue;
+        // Don't place conveyors too close to player start.
+        if (Math.abs(r - playerRow) + Math.abs(c - playerCol) < 6) continue;
+        // Don't place directly adjacent to keys (preserve key readability).
+        let nearKey = false;
+        for (const kp of keyPositions) {
+          if (Math.abs(kp.row - r) + Math.abs(kp.col - c) < 2) { nearKey = true; break; }
+        }
+        if (nearKey) continue;
+
+        grid[r * cols + c] = convDirs[(Math.random() * 4) | 0];
+        convPlaced++;
       }
-      if (nearKey) continue;
-
-      grid[r * cols + c] = convDirs[(Math.random() * 4) | 0];
-      convPlaced++;
     }
 
     // ── 4. Trap tiles ────────────────────────────────────────
     // Place one trap per key as an adjacent floor hazard (beside the key, not
     // on the path toward it so the player triggers it when grabbing the key).
-    for (const kp of keyPositions) {
-      if (Math.random() > density) continue;
-      // Collect floor neighbours of the key.
-      const neighbours = [];
-      for (const [dc, dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-        const nc = kp.col + dc, nr = kp.row + dr;
-        if (nc < 1 || nc >= cols - 1 || nr < 2 || nr >= rows - 1) continue;
-        if (grid[nr * cols + nc] === F) neighbours.push({ col: nc, row: nr });
-      }
-      if (neighbours.length > 0) {
-        const tp = neighbours[(Math.random() * neighbours.length) | 0];
-        grid[tp.row * cols + tp.col] = TR;
+    if (!noTraps) {
+      for (const kp of keyPositions) {
+        if (Math.random() > density) continue;
+        // Collect floor neighbours of the key.
+        const neighbours = [];
+        for (const [dc, dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nc = kp.col + dc, nr = kp.row + dr;
+          if (nc < 1 || nc >= cols - 1 || nr < 2 || nr >= rows - 1) continue;
+          if (grid[nr * cols + nc] === F) neighbours.push({ col: nc, row: nr });
+        }
+        if (neighbours.length > 0) {
+          const tp = neighbours[(Math.random() * neighbours.length) | 0];
+          grid[tp.row * cols + tp.col] = TR;
+        }
       }
     }
 
