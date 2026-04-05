@@ -16,6 +16,19 @@ body {
   padding: 16px;
 }
 
+/* On touch/mobile devices collapse padding and center vertically so the
+   auto-applied pseudo-fullscreen is already positioned cleanly. */
+@media (hover: none) and (pointer: coarse) {
+  body {
+    padding: 0;
+    align-items: center;
+    min-height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+}
+
 #game-container {
   position: relative;
   display: inline-block;
@@ -685,9 +698,9 @@ body {
     ".    up   ."
     "left .    right"
     ".    down .";
-  grid-template-columns: 64px 64px 64px;
-  grid-template-rows:    64px 64px 64px;
-  gap: 6px;
+  grid-template-columns: 80px 80px 80px;
+  grid-template-rows:    80px 80px 80px;
+  gap: 8px;
 }
 
 #dpad-up    { grid-area: up; }
@@ -695,9 +708,20 @@ body {
 #dpad-right { grid-area: right; }
 #dpad-down  { grid-area: down; }
 
-/* Movement buttons — primary, large */
+/* Movement buttons — primary, large, cyan accent */
 .dpad-move-btn {
-  font-size: 1.6rem;
+  font-size: 2rem;
+  color: #00e8ff;
+  border-color: rgba(0, 232, 255, 0.60);
+  background: rgba(0, 232, 255, 0.10);
+  box-shadow: 0 0 12px rgba(0, 232, 255, 0.28), inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+.dpad-move-btn:active,
+.dpad-move-btn.dpad-pressed {
+  background: rgba(0, 232, 255, 0.30);
+  box-shadow: 0 0 24px rgba(0, 232, 255, 0.75), inset 0 1px 0 rgba(255,255,255,0.07);
+  transform: scale(0.91);
 }
 
 /* ── Zone 2: Action pad (bottom-right) ───────────────────── */
@@ -709,30 +733,30 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 /* ── Zone 3: System pad (top-right, below HUD) ───────────── */
 #dpad-system {
   position: absolute;
-  top: 48px;  /* below the 38px HUD bar + 10px margin */
+  top: 66px;  /* below the 56px HUD bar + 10px margin */
   right: 8px;
   pointer-events: auto;
   display: grid;
-  grid-template-columns: 48px 48px;
-  grid-template-rows: repeat(3, 48px);
-  gap: 6px;
+  grid-template-columns: 44px 44px;
+  grid-template-rows: repeat(3, 44px);
+  gap: 5px;
 }
 
 /* Common button base */
 .dpad-btn {
   background: rgba(0, 255, 204, 0.10);
-  border: 2px solid rgba(0, 255, 204, 0.45);
-  border-radius: 8px;
+  border: 2px solid rgba(0, 255, 204, 0.55);
+  border-radius: 14px;
   color: #00ffcc;
-  font-size: 1.4rem;
-  width: 64px;
-  height: 64px;
+  font-size: 1.8rem;
+  width: 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -740,107 +764,118 @@ body {
   touch-action: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.08s, box-shadow 0.08s;
+  transition: background 0.08s, box-shadow 0.08s, transform 0.08s;
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.20), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 .dpad-btn:active,
 .dpad-btn.dpad-pressed {
   background: rgba(0, 255, 204, 0.28);
-  box-shadow: 0 0 12px rgba(0, 255, 204, 0.55);
+  box-shadow: 0 0 22px rgba(0, 255, 204, 0.65), inset 0 1px 0 rgba(255,255,255,0.06);
+  transform: scale(0.91);
 }
 
-/* System buttons — smaller */
+/* System buttons — smaller, less prominent */
 #dpad-system .dpad-btn {
-  width: 48px;
-  height: 48px;
-  font-size: 1.15rem;
+  width: 44px;
+  height: 44px;
+  font-size: 1.05rem;
   border-width: 1.5px;
-  background: rgba(0, 0, 0, 0.55);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.58);
+  box-shadow: none;
 }
 
-/* Bomb action button — orange, larger */
+#dpad-system .dpad-btn:active,
+#dpad-system .dpad-btn.dpad-pressed {
+  transform: scale(0.90);
+}
+
+/* Bomb action button — orange, larger, round */
 .dpad-bomb-btn {
-  width: 72px;
-  height: 72px;
+  width: 90px;
+  height: 90px;
   color: #ff9900;
-  border-color: rgba(255, 153, 0, 0.5);
-  background: rgba(255, 153, 0, 0.12);
-  font-size: 2rem;
-  border-radius: 50%; /* round for visual distinctness */
+  border-color: rgba(255, 153, 0, 0.65);
+  background: rgba(255, 153, 0, 0.14);
+  font-size: 2.4rem;
+  border-radius: 50%;
+  box-shadow: 0 0 16px rgba(255, 153, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.07);
 }
 
 .dpad-bomb-btn:active,
 .dpad-bomb-btn.dpad-pressed {
-  background: rgba(255, 153, 0, 0.32);
-  box-shadow: 0 0 18px rgba(255, 153, 0, 0.65);
+  background: rgba(255, 153, 0, 0.38);
+  box-shadow: 0 0 32px rgba(255, 153, 0, 0.80);
+  transform: scale(0.91);
 }
 
 /* Info button */
 .dpad-info-btn {
   color: #66ccff;
-  border-color: rgba(102, 204, 255, 0.45);
+  border-color: rgba(102, 204, 255, 0.50);
   background: rgba(102, 204, 255, 0.08);
 }
 
 .dpad-info-btn:active,
 .dpad-info-btn.dpad-pressed {
-  background: rgba(102, 204, 255, 0.26);
-  box-shadow: 0 0 10px rgba(102, 204, 255, 0.55);
+  background: rgba(102, 204, 255, 0.28);
+  box-shadow: 0 0 12px rgba(102, 204, 255, 0.60);
 }
 
 /* Ghost mode button */
 .dpad-ghost-btn {
   color: #cc88ff;
-  border-color: rgba(204, 136, 255, 0.45);
+  border-color: rgba(204, 136, 255, 0.50);
   background: rgba(204, 136, 255, 0.08);
 }
 
 .dpad-ghost-btn:active,
 .dpad-ghost-btn.dpad-pressed {
-  background: rgba(204, 136, 255, 0.26);
-  box-shadow: 0 0 10px rgba(204, 136, 255, 0.55);
+  background: rgba(204, 136, 255, 0.28);
+  box-shadow: 0 0 12px rgba(204, 136, 255, 0.60);
 }
 
 /* Fog mode button */
 .dpad-fog-btn {
   color: #aaddff;
-  border-color: rgba(170, 221, 255, 0.45);
+  border-color: rgba(170, 221, 255, 0.50);
   background: rgba(170, 221, 255, 0.08);
 }
 
 .dpad-fog-btn:active,
 .dpad-fog-btn.dpad-pressed {
-  background: rgba(170, 221, 255, 0.26);
-  box-shadow: 0 0 10px rgba(170, 221, 255, 0.55);
+  background: rgba(170, 221, 255, 0.28);
+  box-shadow: 0 0 12px rgba(170, 221, 255, 0.60);
 }
 
-/* Debug button */
+/* Debug button — purple */
 .dpad-debug-btn {
-  color: #ff4477;
-  border-color: rgba(255, 68, 119, 0.45);
-  background: rgba(255, 68, 119, 0.08);
-  font-size: 1.1rem;
+  color: #bb66ff;
+  border-color: rgba(187, 102, 255, 0.50);
+  background: rgba(187, 102, 255, 0.08);
+  font-size: 1rem;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
 }
 
 .dpad-debug-btn:active,
 .dpad-debug-btn.dpad-pressed {
-  background: rgba(255, 68, 119, 0.26);
-  box-shadow: 0 0 10px rgba(255, 68, 119, 0.55);
+  background: rgba(187, 102, 255, 0.28);
+  box-shadow: 0 0 12px rgba(187, 102, 255, 0.60);
 }
 
 /* Restart button */
 .dpad-restart-btn {
   color: #ffdd44;
-  border-color: rgba(255, 221, 68, 0.45);
+  border-color: rgba(255, 221, 68, 0.50);
   background: rgba(255, 221, 68, 0.08);
 }
 
 .dpad-restart-btn:active,
 .dpad-restart-btn.dpad-pressed {
-  background: rgba(255, 221, 68, 0.26);
-  box-shadow: 0 0 10px rgba(255, 221, 68, 0.55);
+  background: rgba(255, 221, 68, 0.28);
+  box-shadow: 0 0 12px rgba(255, 221, 68, 0.60);
 }
 
 /* ── Fullscreen / pseudo-fullscreen layout ──────────────────── */
@@ -959,7 +994,7 @@ body.pseudo-fullscreen #game-container {
   }
 
   #dpad-system {
-    top:   max(48px, calc(env(safe-area-inset-top) + 38px + 10px));
+    top:   max(66px, calc(env(safe-area-inset-top) + 56px + 10px));
     right: max(8px,  calc(env(safe-area-inset-right) + 4px));
   }
 }

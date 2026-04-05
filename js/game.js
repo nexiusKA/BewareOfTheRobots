@@ -35,7 +35,7 @@ const Game = (() => {
   const VIEWPORT_ROWS = 20;
   const VIEWPORT_W    = VIEWPORT_COLS * Tilemap.TILE_SIZE; // 960 px
   const VIEWPORT_H    = VIEWPORT_ROWS * Tilemap.TILE_SIZE; // 960 px
-  const _HUD_HEIGHT   = 38; // pixels reserved at top for HUD bar
+  const _HUD_HEIGHT   = 56; // pixels reserved at top for HUD bar
   let _camX = 0;  // world-space left edge of viewport
   let _camY = 0;  // world-space top edge of viewport
   const CAM_SMOOTH = 12; // camera lerp speed (higher = tighter follow)

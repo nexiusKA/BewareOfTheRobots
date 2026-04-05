@@ -158,6 +158,7 @@ const UI = (() => {
   function isInfoVisible() { return _infoVisible; }
 
   // ── HUD (drawn on canvas) ────────────────────────────────
+  const HUD_BAR_H = 56; // must match _HUD_HEIGHT in game.js
   let _hudFlash = 0;   // key-collected flash timer
   let _hudAmmoFlash = 0; // ammo-collected flash timer
   let _keyPopTimer  = 0; // scale-pop animation on key pickup
@@ -230,38 +231,44 @@ const UI = (() => {
   }
 
   function drawHUD(ctx, canvasW, canvasH) {
-    const pad  = 12;
-    const barH = 38;
+    const pad  = 14;
+    const barH = HUD_BAR_H;
     const y0   = 0;
 
     // Theme accent colour (falls back to default cyan)
     const accent = _theme ? _theme.hudColor : '#00ffcc';
     const border = _theme ? _theme.hudBorder : 'rgba(0,255,204,0.2)';
 
-    // HUD background bar
-    ctx.fillStyle   = 'rgba(5,5,20,0.82)';
+    // HUD background bar — slightly stronger backdrop for readability
+    ctx.fillStyle   = 'rgba(4,4,18,0.92)';
     ctx.fillRect(0, y0, canvasW, barH);
-    ctx.strokeStyle = border;
-    ctx.lineWidth   = 1;
-    ctx.strokeRect(0, y0, canvasW, barH);
+    // Bottom border glow line
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.25;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, barH - 0.75);
+    ctx.lineTo(canvasW, barH - 0.75);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
 
-    ctx.font          = 'bold 13px Courier New';
+    ctx.font          = 'bold 19px Courier New';
     ctx.textBaseline  = 'middle';
 
     // Level / sector
     ctx.fillStyle   = accent;
     ctx.textAlign   = 'left';
-    ctx.shadowBlur  = 6;
+    ctx.shadowBlur  = 8;
     ctx.shadowColor = accent;
-    ctx.fillText(`SECTOR ${_hudLevel} / ${_hudTotalLevels}`, pad, y0 + barH / 2);
+    ctx.fillText(`SECTOR ${_hudLevel} / ${_hudTotalLevels}`, pad, y0 + barH / 2 - 6);
 
     // Theme name (small, dimmed)
     if (_theme) {
-      ctx.font      = '10px Courier New';
+      ctx.font      = '13px Courier New';
       ctx.fillStyle = `${accent}88`;
       ctx.shadowBlur = 0;
-      ctx.fillText(_theme.name, pad, y0 + barH / 2 + 11);
-      ctx.font      = 'bold 13px Courier New';
+      ctx.fillText(_theme.name, pad, y0 + barH / 2 + 12);
+      ctx.font      = 'bold 19px Courier New';
     }
 
     // Colored key inventory — chips for each key color
@@ -271,12 +278,12 @@ const UI = (() => {
       { color: '#4488ff', shadowC: '#2255cc', name: 'blue'   },
       { color: '#44ff88', shadowC: '#00cc55', name: 'green'  },
     ];
-    const chipW = 38, chipH = 16, chipGap = 6;
+    const chipW = 52, chipH = 22, chipGap = 8;
     const totalChipW = KEY_COLORS.length * (chipW + chipGap) - chipGap;
     let chipX = canvasW / 2 - totalChipW / 2;
     const chipY = y0 + (barH - chipH) / 2;
 
-    ctx.font = 'bold 10px Courier New';
+    ctx.font = 'bold 13px Courier New';
     for (const { color, shadowC, name } of KEY_COLORS) {
       const count = _hudColorKeys[name] || 0;
       const flash = name === _lastKeyFlashColor && _hudFlash > 0;
@@ -318,7 +325,7 @@ const UI = (() => {
       chipX += chipW + chipGap;
     }
 
-    ctx.font        = 'bold 13px Courier New';
+    ctx.font        = 'bold 19px Courier New';
     ctx.shadowBlur  = 0;
 
     // Bombs — flash green on collect + scale-pop animation
@@ -327,10 +334,10 @@ const UI = (() => {
       : (_hudBombs === 0 ? 'rgba(150,150,150,0.5)' : '#00ff88');
     ctx.fillStyle   = bombColor;
     ctx.shadowColor = bombColor;
-    ctx.shadowBlur  = 6;
+    ctx.shadowBlur  = 8;
     const bombDots  = _hudBombs > 0 ? '◆'.repeat(_hudBombs) : '—';
     {
-      const bombTx = canvasW / 2 + 130, bombTy = y0 + barH / 2;
+      const bombTx = canvasW / 2 + 160, bombTy = y0 + barH / 2 - 6;
       const bombPop = _ammoPopTimer > 0
         ? 1 + Math.sin((_ammoPopTimer / POP_DURATION) * Math.PI) * 0.25
         : 1;
@@ -346,13 +353,13 @@ const UI = (() => {
     ctx.textAlign   = 'right';
 
     // Primary shortcuts (always visible)
-    ctx.font      = '11px Courier New';
+    ctx.font      = '14px Courier New';
     ctx.fillStyle = `${accent}72`;
     ctx.fillText('[R] RESTART  [I] INFO', canvasW - pad, y0 + barH / 2 - 6);
 
     // Mode shortcuts — draw right-to-left so we can vary colour per button
-    const modeY = y0 + barH / 2 + 8;
-    ctx.font = '9px Courier New';
+    const modeY = y0 + barH / 2 + 12;
+    ctx.font = '11px Courier New';
     let rx = canvasW - pad;
 
     const modeBtns = [
@@ -376,7 +383,7 @@ const UI = (() => {
     // Alert meter — thin coloured bar across the bottom edge of the HUD strip.
     // Fills left-to-right as alert level rises; flashes red when critical.
     if (_alertLevel > 0.01) {
-      const meterH = 3;
+      const meterH = 4;
       const meterY = barH - meterH;
       const meterW = Math.round(canvasW * _alertLevel);
       const isHigh = _alertLevel >= ALERT_THRESHOLD;
@@ -395,12 +402,12 @@ const UI = (() => {
       ctx.save();
       ctx.globalAlpha = flashAlpha;
       ctx.fillStyle   = `rgb(${r},${g},0)`;
-      ctx.shadowBlur  = isHigh ? 10 : 4;
+      ctx.shadowBlur  = isHigh ? 12 : 5;
       ctx.shadowColor = `rgb(${r},${g},0)`;
       ctx.fillRect(0, meterY, meterW, meterH);
 
       // "ALERT" label and optional countdown text
-      ctx.font         = 'bold 9px Courier New';
+      ctx.font         = 'bold 11px Courier New';
       ctx.textBaseline = 'bottom';
       ctx.fillStyle    = `rgba(${r},${g},0,0.9)`;
       ctx.shadowBlur   = 3;
@@ -424,8 +431,8 @@ const UI = (() => {
   // ── Mini-map ─────────────────────────────────────────────
   // Drawn in the bottom-right corner of the canvas (over the map area).
   // Shows the full level layout at reduced scale with the player's position.
-  const MINIMAP_MAX  = 150; // max dimension in pixels
-  const MINIMAP_PAD  = 10;  // padding from canvas edge
+  const MINIMAP_MAX  = 180; // max dimension in pixels
+  const MINIMAP_PAD  = 12;  // padding from canvas edge
   let _minimapPulse  = 0;   // for player dot pulsing
 
   function drawMinimap(ctx, canvasW, canvasH, playerCol, playerRow, debugMode) {
@@ -453,19 +460,22 @@ const UI = (() => {
 
     ctx.save();
 
-    // Background panel
-    ctx.fillStyle   = 'rgba(5,5,20,0.78)';
-    ctx.strokeStyle = `${accent}59`;
-    ctx.lineWidth   = 1;
-    ctx.fillRect(mmX - 3, mmY - 3, mmW + 6, mmH + 6);
-    ctx.strokeRect(mmX - 3, mmY - 3, mmW + 6, mmH + 6);
+    // Background panel with glow border
+    ctx.shadowBlur  = 8;
+    ctx.shadowColor = accent;
+    ctx.fillStyle   = 'rgba(3,3,16,0.88)';
+    ctx.strokeStyle = `${accent}80`;
+    ctx.lineWidth   = 1.5;
+    ctx.fillRect(mmX - 4, mmY - 4, mmW + 8, mmH + 8);
+    ctx.strokeRect(mmX - 4, mmY - 4, mmW + 8, mmH + 8);
+    ctx.shadowBlur  = 0;
 
     // Label
-    ctx.font          = '8px Courier New';
-    ctx.fillStyle     = `${accent}8c`;
+    ctx.font          = '11px Courier New';
+    ctx.fillStyle     = `${accent}aa`;
     ctx.textAlign     = 'left';
     ctx.textBaseline  = 'alphabetic';
-    ctx.fillText('MAP', mmX - 2, mmY - 5);
+    ctx.fillText('MAP', mmX - 3, mmY - 6);
 
     // Draw tiles — use theme floor/wall colours when available
     const T  = Tilemap.TILE;
@@ -595,13 +605,13 @@ const UI = (() => {
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = 'bold 13px Courier New';
+    ctx.font = 'bold 20px Courier New';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowBlur = 10 + pulse * 10;
+    ctx.shadowBlur = 12 + pulse * 12;
     ctx.shadowColor = '#ff0000';
     ctx.fillStyle = '#ff2244';
-    ctx.fillText('⚠  DANGER  ⚠', w / 2, 56);
+    ctx.fillText('⚠  DANGER  ⚠', w / 2, HUD_BAR_H + 24);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -620,18 +630,18 @@ const UI = (() => {
 
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = 'bold 13px Courier New';
+    ctx.font = 'bold 20px Courier New';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowBlur  = 12 + pulse * 12;
+    ctx.shadowBlur  = 14 + pulse * 14;
     ctx.shadowColor = '#ff4400';
     ctx.fillStyle   = '#ff6600';
 
     if (_alertHoldTimer > 0) {
       const remaining = Math.max(0, _alertFailDuration - _alertHoldTimer);
-      ctx.fillText(`⚠  ALERT CRITICAL — ${remaining.toFixed(1)}s  ⚠`, w / 2, 76);
+      ctx.fillText(`⚠  ALERT CRITICAL — ${remaining.toFixed(1)}s  ⚠`, w / 2, HUD_BAR_H + 48);
     } else {
-      ctx.fillText('⚠  ALERT CRITICAL  ⚠', w / 2, 76);
+      ctx.fillText('⚠  ALERT CRITICAL  ⚠', w / 2, HUD_BAR_H + 48);
     }
 
     ctx.shadowBlur  = 0;

@@ -21,6 +21,12 @@
   Game.init(canvas);
   Game.start();
 
+  // On touch/mobile devices automatically activate pseudo-fullscreen so the
+  // game fills the viewport rather than showing large empty margins.
+  if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
+    Fullscreen.enterPseudo();
+  }
+
   // ── Mobile D-pad wiring ────────────────────────────────────
   const DPAD_INITIAL_DELAY = 280; // ms before repeat starts on hold
   const DPAD_REPEAT_DELAY  = 160; // ms between repeated moves while held
