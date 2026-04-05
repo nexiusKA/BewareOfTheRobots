@@ -81,6 +81,9 @@ const EnemyManager = (() => {
   // Extra fog-reveal radius (tiles) around the player.
   const FOG_PEEK_RADIUS = 2;
 
+  // Seconds an enemy remains disabled after being hit by a bomb's outer blast zone.
+  const DISABLE_DURATION = 4;
+
   // Hue range (degrees) for the detection-bar gradient (orange to red).
   const METER_HUE_MAX = 30;
 
@@ -146,16 +149,47 @@ const EnemyManager = (() => {
       this.alertTimer = 0;         // drives "!" flash above the body
       this.bobTimer   = Math.random() * Math.PI * 2;
 
+      // Disabled state timer (counts down to zero, then resumes patrol)
+      this._disableTimer = 0;
+
       // Scanner sweep (used by SCANNER and SCANNER_BOT types via effectiveFacing)
       this._sweepTimer  = Math.random() * Math.PI * 2;
       this._sweepOffset = 0;
     }
 
+    // ── Explicit state-change methods ────────────────────────────────────────
+
+    // Temporarily stun the enemy for `duration` seconds.
+    // The enemy stops moving and stops detecting; it resumes patrol when the
+    // timer expires.  Safe to call on an already-disabled enemy (re-stuns it).
+    disable(duration) {
+      this.state          = STATE.DISABLED;
+      this._disableTimer  = duration;
+      this.detectionMeter = 0;
+    }
+
+    // Permanently destroy the enemy; wreckage stays visible on the map.
+    destroy() {
+      this.state          = STATE.DESTROYED;
+      this.detectionMeter = 0;
+    }
+
     // ── update: orchestrates sense -> think -> act ───────────────────────────
     update(dt, playerPx, playerPy) {
-      if (this.state === STATE.DISABLED || this.state === STATE.DESTROYED) return;
+      if (this.state === STATE.DESTROYED) return;
 
+      // Keep the bob animation running even while disabled (used in drawBody).
       this.bobTimer += dt;
+
+      if (this.state === STATE.DISABLED) {
+        this._disableTimer -= dt;
+        if (this._disableTimer <= 0) {
+          this.state = STATE.PATROL;
+          this._resetToNearestWaypoint();
+        }
+        return;
+      }
+
       if (this.alertTimer > 0) this.alertTimer -= dt;
 
       // Scanner cone oscillates independently of movement direction.
@@ -421,8 +455,13 @@ const EnemyManager = (() => {
       const y = this.py;
       const r = TS * 0.36;
 
-      if (this.state === STATE.DESTROYED || this.state === STATE.DISABLED) {
+      if (this.state === STATE.DESTROYED) {
         _drawWreckage(ctx, x, y, r);
+        return;
+      }
+
+      if (this.state === STATE.DISABLED) {
+        _drawDisabled(ctx, x, y, r, this.bobTimer);
         return;
       }
 
@@ -566,6 +605,39 @@ const EnemyManager = (() => {
   // =========================================================================
   //  Shared drawing helpers  (pure functions, no per-enemy state)
   // =========================================================================
+
+  function _drawDisabled(ctx, x, y, r, bobTimer) {
+    const pulse = (Math.sin(bobTimer * 9) + 1) / 2;
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Dimmed robot body (dark blue-grey tint)
+    ctx.globalAlpha = 0.5 + pulse * 0.1;
+    ctx.shadowBlur  = 6 + pulse * 8;
+    ctx.shadowColor = '#00ccff';
+    ctx.fillStyle   = '#1a3a5c';
+    ctx.beginPath();
+    ctx.roundRect(-r, -r, r * 2, r * 2, 4);
+    ctx.fill();
+
+    // Pulsing cyan ring — visual indicator that the enemy is stunned
+    ctx.globalAlpha = 0.55 + pulse * 0.35;
+    ctx.strokeStyle = `rgba(0,200,255,${0.55 + pulse * 0.35})`;
+    ctx.lineWidth   = 2.5;
+    ctx.shadowBlur  = 10 + pulse * 10;
+    ctx.shadowColor = '#00ccff';
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.18, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // "~" label above the body (disabled / stunned indicator)
+    const labelAlpha = 0.65 + pulse * 0.3;
+    _drawStateLabel(ctx, '~', x, y - r - 10, '#00ddff', '#0099cc', labelAlpha, 16);
+  }
 
   function _drawStateLabel(ctx, text, x, y, fill, shadow, alpha, size) {
     ctx.save();
@@ -794,13 +866,31 @@ const EnemyManager = (() => {
     for (const e of _enemies) {
       if (e.state === STATE.DESTROYED) continue;
       if (Utils.dist2(e.px, e.py, px, py) <= r2) {
-        e.state          = STATE.DESTROYED;
-        e.detectionMeter = 0;
+        e.destroy();
       }
     }
   }
 
-  // Legacy alias so bomb.js requires no changes.
+  // Applies a two-zone blast effect centered at (px, py):
+  //   inner half of radius → permanently destroyed
+  //   outer half of radius → temporarily disabled for DISABLE_DURATION seconds
+  // This is the primary API for bomb detonations.
+  function applyBlastInRadius(px, py, radius) {
+    const destroyR  = radius * 0.5;
+    const destroyR2 = destroyR * destroyR;
+    const blastR2   = radius * radius;
+    for (const e of _enemies) {
+      if (e.state === STATE.DESTROYED) continue;
+      const d2 = Utils.dist2(e.px, e.py, px, py);
+      if (d2 <= destroyR2) {
+        e.destroy();
+      } else if (d2 <= blastR2) {
+        e.disable(DISABLE_DURATION);
+      }
+    }
+  }
+
+  // Legacy alias — kept for backward compatibility.
   function killEnemiesInRadius(px, py, radius) { destroyEnemiesInRadius(px, py, radius); }
 
   function getEnemies() { return _enemies; }
@@ -809,7 +899,7 @@ const EnemyManager = (() => {
     init, update, draw,
     addEnemy, removeDestroyed, isAnyAlert,
     wasDetected, getNearAlert, getEnemies,
-    destroyEnemiesInRadius, killEnemiesInRadius,
+    destroyEnemiesInRadius, killEnemiesInRadius, applyBlastInRadius,
     TYPE, STATE,
     setDetectTime, setConeScale, getDetectTime, getConeScale,
   };
