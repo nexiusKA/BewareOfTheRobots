@@ -45,8 +45,8 @@ const UI = (() => {
 
       '<div class="start-section">' +
         '<div class="start-section-header">🎯 OBJECTIVE</div>' +
-        '<div class="start-feat-row">🔑 Collect <b>COLORED KEYS</b> to unlock matching 🚪 <b>DOORS</b> — find each key in the zone behind its door</div>' +
-        '<div class="start-feat-row">💡 <b>Route planning</b>: grab the yellow key first, then unlock zones for red, blue, green keys</div>' +
+        '<div class="start-feat-row">🔑 Collect <b>COLORED KEYS</b> to unlock matching 🚪 <b>DOORS</b> — yellow key starts in your zone</div>' +
+        '<div class="start-feat-row">💡 <b>Route planning</b>: yellow key → open yellow door → find red key → open red door → etc.</div>' +
         '<div class="start-feat-row">💣 Place <b>BOMBS</b> <small>[Space]</small> — 1.2s fuse, blast clears enemies permanently</div>' +
         '<div class="start-feat-row">◆ Grab <b>AMMO</b> crates scattered across each sector for extra charges</div>' +
       '</div>' +
@@ -279,7 +279,7 @@ const UI = (() => {
     ctx.font = 'bold 10px Courier New';
     for (const { color, shadowC, name } of KEY_COLORS) {
       const count = _hudColorKeys[name] || 0;
-      const flash = (name === 'yellow' || name === _lastKeyFlashColor) && _hudFlash > 0;
+      const flash = name === _lastKeyFlashColor && _hudFlash > 0;
       const alpha = count > 0 ? 1 : 0.28;
 
       ctx.save();

@@ -715,7 +715,7 @@ body {
 /* ── Zone 3: System pad (top-right, below HUD) ───────────── */
 #dpad-system {
   position: absolute;
-  top: 48px;  /* below the 38px HUD bar + margin */
+  top: 48px;  /* below the 38px HUD bar + 10px margin */
   right: 8px;
   pointer-events: auto;
   display: grid;
