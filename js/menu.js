@@ -4,10 +4,11 @@
 
 const Menu = (() => {
 
-  const _el       = document.getElementById('start-menu');
-  const _playBtn  = document.getElementById('start-menu-play-btn');
-  const _soundBtn = document.getElementById('start-menu-sound-btn');
-  const _buildEl  = document.getElementById('start-menu-build');
+  const _el          = document.getElementById('start-menu');
+  const _playBtn     = document.getElementById('start-menu-play-btn');
+  const _continueBtn = document.getElementById('start-menu-continue-btn');
+  const _soundBtn    = document.getElementById('start-menu-sound-btn');
+  const _buildEl     = document.getElementById('start-menu-build');
 
   // Callback stored at show() time; onclick is wired once during init.
   let _onStartCallback = null;
@@ -34,6 +35,12 @@ const Menu = (() => {
       Sound.toggleMute();
       _syncSoundBtn();
     });
+  }
+
+  // ── Saved progress helper ────────────────────────────────
+  function _getSaved() {
+    try { return JSON.parse(localStorage.getItem('botr_save')) || {}; }
+    catch (e) { return {}; }
   }
 
   // ── Fade-out helper ──────────────────────────────────────
@@ -74,17 +81,35 @@ const Menu = (() => {
       if (!_onStartCallback) return;
       // Prevent double-tap while fade is in progress
       _playBtn.disabled = true;
+      Sound.tap();
       _fadeOutAndRun(_onStartCallback);
     });
   }
 
   // ── Public API ───────────────────────────────────────────
 
-  function show(onStart) {
+  function show(onStart, onContinue) {
     _onStartCallback = onStart;
     if (_playBtn) _playBtn.disabled = false;
     _el.classList.remove('hidden', 'menu-fading-out');
     _syncSoundBtn();
+
+    // Show Continue button only if there is a saved mid-game level
+    const saved = _getSaved();
+    if (_continueBtn) {
+      if (saved.level > 0 && typeof onContinue === 'function') {
+        _continueBtn.classList.remove('hidden');
+        _continueBtn.textContent = '▶  CONTINUE  SECTOR ' + (saved.level + 1);
+        _continueBtn.disabled = false;
+        _continueBtn.onclick = function () {
+          _continueBtn.disabled = true;
+          Sound.tap();
+          _fadeOutAndRun(function () { onContinue(saved.level); });
+        };
+      } else {
+        _continueBtn.classList.add('hidden');
+      }
+    }
   }
 
   function hide() {

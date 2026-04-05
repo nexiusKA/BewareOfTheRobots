@@ -96,6 +96,41 @@
   _setupActionButton('dpad-fog',     'KeyF');
   _setupActionButton('dpad-debug',   null, '#');
 
+  // ── Dpad pause button ──────────────────────────────────────
+  (function () {
+    const btn = document.getElementById('dpad-pause');
+    if (!btn) return;
+    function onRelease() { btn.classList.remove('dpad-pressed'); }
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      Game.togglePause();
+      btn.classList.add('dpad-pressed');
+    });
+    btn.addEventListener('pointerup',     onRelease);
+    btn.addEventListener('pointercancel', onRelease);
+    btn.addEventListener('pointerleave',  onRelease);
+  })();
+
+  // ── Pause overlay buttons ──────────────────────────────────
+  (function () {
+    const resumeBtn  = document.getElementById('pause-resume-btn');
+    const restartBtn = document.getElementById('pause-restart-btn');
+    if (resumeBtn) {
+      resumeBtn.addEventListener('click', function () {
+        Sound.tap();
+        Game.togglePause();
+      });
+    }
+    if (restartBtn) {
+      restartBtn.addEventListener('click', function () {
+        Sound.tap();
+        // Restart triggers via the R key virtual press so the game's own
+        // restart logic (which also closes the pause overlay) runs cleanly.
+        Input.pressVirtual('KeyR');
+      });
+    }
+  })();
+
   // ── Fullscreen wiring ──────────────────────────────────────
   // Both the start-menu button and the in-game dpad button call
   // Fullscreen.toggle() directly from a user-gesture handler so the

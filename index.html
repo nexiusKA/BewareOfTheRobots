@@ -54,6 +54,7 @@
       </div>
       <!-- System zone: utility / debug controls (top-right) -->
       <div id="dpad-system">
+        <button class="dpad-btn dpad-pause-btn"   id="dpad-pause"      aria-label="Pause">⏸</button>
         <button class="dpad-btn dpad-info-btn"    id="dpad-info"       aria-label="Info / mission briefing">ℹ</button>
         <button class="dpad-btn dpad-restart-btn" id="dpad-restart"    aria-label="Restart level">↺</button>
         <button class="dpad-btn dpad-fog-btn"     id="dpad-fog"        aria-label="Toggle fog mode">🌫️</button>
@@ -160,12 +161,21 @@
         <button class="mobile-toggle-btn" id="info-mobile-btn">📱 Mobile Controls: OFF</button>
       </div>
     </div>
+    <!-- Pause overlay — shown when game is paused (P key or ⏸ button) -->
+    <div id="pause-overlay" class="hidden">
+      <div id="pause-content">
+        <div id="pause-title">PAUSED</div>
+        <button id="pause-resume-btn">▶  RESUME</button>
+        <button id="pause-restart-btn">↺  RESTART LEVEL</button>
+      </div>
+    </div>
     <!-- Start menu — compact mobile-friendly card (replaces full-screen start overlay) -->
     <div id="start-menu" class="hidden">
       <div id="start-menu-card">
         <div id="start-menu-title">🤖 BEWARE OF THE ROBOTS</div>
         <div id="start-menu-sub">Tactical stealth — evade, think, survive.</div>
         <div id="start-menu-actions">
+          <button id="start-menu-continue-btn" class="hidden">▶  CONTINUE</button>
           <button id="start-menu-play-btn" autofocus>▶  START GAME</button>
           <button id="start-menu-sound-btn">🔊 SOUND ON</button>
           <button id="start-menu-fs-btn" class="fullscreen-btn" data-fslabel="1" aria-label="Enter fullscreen">⛶  FULLSCREEN</button>

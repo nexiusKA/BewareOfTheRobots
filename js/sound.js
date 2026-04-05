@@ -151,7 +151,39 @@ const Sound = (() => {
     _tone(1800, 'sine', 0.14, 0.20, now + 0.23);
   }
 
-  return { keyPickup, bombPlace, bombDetonate, move, doorOpen, toggleMute, isMuted };
+  // Short soft click for UI button presses
+  function tap() {
+    if (_muted) return;
+    const ctx = _getCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    _tone(900, 'sine', 0.05, 0.07, now);
+  }
+
+  // Ascending four-note fanfare for level/sector complete
+  function levelComplete() {
+    if (_muted) return;
+    const ctx = _getCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    _tone(523,  'sine', 0.25, 0.32, now);         // C5
+    _tone(659,  'sine', 0.25, 0.32, now + 0.12);  // E5
+    _tone(784,  'sine', 0.25, 0.32, now + 0.24);  // G5
+    _tone(1047, 'sine', 0.35, 0.38, now + 0.36);  // C6
+  }
+
+  // Short alarm pulse for trap activation and enemy alert transitions
+  function alarm() {
+    if (_muted) return;
+    const ctx = _getCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    _tone(880, 'square', 0.10, 0.18, now);
+    _tone(660, 'square', 0.10, 0.15, now + 0.15);
+    _tone(880, 'square', 0.08, 0.12, now + 0.30);
+  }
+
+  return { keyPickup, bombPlace, bombDetonate, move, doorOpen, tap, levelComplete, alarm, toggleMute, isMuted };
 })();
 
 // ── Music ────────────────────────────────────────────────────
