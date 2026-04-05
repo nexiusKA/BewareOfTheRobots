@@ -81,6 +81,15 @@ const Game = (() => {
   // ── Debug mode (# key) ───────────────────────────────────
   let _debugMode = false;
 
+  // ── Conveyor tracking ────────────────────────────────────
+  // Prevents conveyors from chaining more than MAX_CONVEYOR_CHAIN tiles per player action.
+  const MAX_CONVEYOR_CHAIN = 4;
+  let _conveyorChain = 0;
+
+  // ── Trap tracking ────────────────────────────────────────
+  // Spike to add to alert when a trap tile is triggered.
+  const TRAP_ALERT_SPIKE = 0.55;
+
   function init(canvas) {
     _canvas = canvas;
     _ctx    = canvas.getContext('2d');
@@ -143,12 +152,26 @@ const Game = (() => {
     // Generate a fresh map for this level
     const generated = MapGen.generate(config);
 
+    // Redistribute key positions to better dead-end spots within each zone.
+    const mapGrid = _randomizeKeyPositions(generated);
+
+    // Place puzzle elements (pressure plates, doors, lasers, etc.) around the
+    // keys now that they are in their final positions.
+    const puzzleLinks = MapGen.addPuzzleElements(
+      mapGrid,
+      generated.cols, generated.rows,
+      generated.doorRows,
+      generated.playerStart.col, generated.playerStart.row,
+      config
+    );
+
     // Init subsystems
-    Tilemap.init(generated.cols, generated.rows, _randomizeKeyPositions(generated));
+    Tilemap.init(generated.cols, generated.rows, mapGrid);
     FogManager.init(generated.cols, generated.rows, generated.playerStart.col, generated.playerStart.row);
     Player.init(generated.playerStart.col, generated.playerStart.row, config.startBombs || 0);
     EnemyManager.init(generated.enemies);
     BombManager.init();
+    PuzzleManager.init(generated.cols, generated.rows, puzzleLinks);
 
     // Snap camera to player start to avoid a panning-in effect on level load
     _camX = Player.getPx() - VIEWPORT_W / 2;
@@ -177,6 +200,7 @@ const Game = (() => {
     _alertHoldTimer = 0;
     _holdDir   = null;
     _holdTimer = 0;
+    _conveyorChain = 0;
   }
 
   function _onKeyCollect(col, row, keyColor) {
@@ -335,8 +359,9 @@ const Game = (() => {
     if (dx !== 0 || dy !== 0) {
       // Fresh key press: move immediately and start hold timer
       Player.tryMove(dx, dy, _onKeyCollect, _onDoorOpen, null);
-      _holdDir   = { dx, dy };
-      _holdTimer = HOLD_INITIAL;
+      _holdDir      = { dx, dy };
+      _holdTimer    = HOLD_INITIAL;
+      _conveyorChain = 0; // manual move resets conveyor chain
     } else {
       const held = Input.getHeldDir();
       if (held.dx !== 0 || held.dy !== 0) {
@@ -348,7 +373,8 @@ const Game = (() => {
         _holdTimer -= rawDt;
         if (_holdTimer <= 0 && !Player.isMoving()) {
           Player.tryMove(held.dx, held.dy, _onKeyCollect, _onDoorOpen, null);
-          _holdTimer = HOLD_REPEAT;
+          _holdTimer     = HOLD_REPEAT;
+          _conveyorChain = 0;
         }
       } else {
         _holdDir   = null;
@@ -367,6 +393,32 @@ const Game = (() => {
 
     // Advance player movement animation and process tile events
     Player.update(dt, _onKeyCollect, _onExit, _onAmmoCollect);
+
+    // ── Puzzle: conveyor tiles ───────────────────────────────
+    // When the player finishes arriving on a conveyor tile, push them one step
+    // in the conveyor direction.  Cap at 4 chained conveyor steps to prevent loops.
+    if (!Player.isMoving() && _conveyorChain < 4) {
+      const convDir = Tilemap.getConveyorDir(Player.getCol(), Player.getRow());
+      if (convDir) {
+        Player.tryMove(convDir.dx, convDir.dy, _onKeyCollect, _onDoorOpen, null);
+        _conveyorChain++;
+      } else {
+        _conveyorChain = 0;
+      }
+    } else if (!Player.isMoving()) {
+      const convDir = Tilemap.getConveyorDir(Player.getCol(), Player.getRow());
+      if (!convDir) _conveyorChain = 0;
+    }
+
+    // ── Puzzle: update PuzzleManager ─────────────────────────
+    PuzzleManager.update(dt, Player.getCol(), Player.getRow());
+
+    // ── Puzzle: trap trigger ─────────────────────────────────
+    if (PuzzleManager.consumeTrapTrigger()) {
+      _globalAlert = Math.min(1, _globalAlert + TRAP_ALERT_SPIKE);
+      _shakeDur    = Math.max(_shakeDur, SHAKE_DURATION * 0.5);
+      Sound.alarm && Sound.alarm();
+    }
 
     // Expand fog exploration to current player position
     FogManager.reveal(Player.getCol(), Player.getRow());
@@ -462,6 +514,7 @@ const Game = (() => {
     ctx.clip();
     ctx.translate(-_camX + _shakeX, _HUD_HEIGHT - _camY + _shakeY);
     Tilemap.draw(ctx);
+    PuzzleManager.draw(ctx);  // laser beams + timed-door arcs (drawn above tilemap, below fog)
     FogManager.draw(ctx);
     BombManager.draw(ctx);
     EnemyManager.draw(ctx, _debugMode);

@@ -114,6 +114,9 @@ const Player = (() => {
       }
 
       if (!Tilemap.isPassable(nc, nr)) return; // wall
+
+      // Laser beams block movement.
+      if (typeof PuzzleManager !== 'undefined' && PuzzleManager.isLaserActiveAt(nc, nr)) return;
     }
 
     // Start movement

@@ -22,6 +22,17 @@ const Tilemap = (() => {
     DOOR_RED:    11,
     DOOR_BLUE:   12,
     DOOR_GREEN:  13,
+    // ── Puzzle tiles ──────────────────────────────────────
+    PRESSURE_PLATE:  14,   // floor-like; activates linked door when stood on
+    TIMED_DOOR:      15,   // impassable when closed; opens for a limited time
+    ONE_WAY_DOOR:    16,   // impassable until pressure-plate activated; opens permanently
+    CONVEYOR_RIGHT:  17,   // floor-like; auto-moves player right
+    CONVEYOR_LEFT:   18,   // floor-like; auto-moves player left
+    CONVEYOR_UP:     19,   // floor-like; auto-moves player up
+    CONVEYOR_DOWN:   20,   // floor-like; auto-moves player down
+    TRAP:            21,   // floor-like; triggers alarm when first stepped on
+    LASER_EMITTER_H: 22,   // wall-like; emits horizontal laser beam
+    LASER_EMITTER_V: 23,   // wall-like; emits vertical laser beam
   };
 
   const TILE_SIZE = 48; // px
@@ -75,7 +86,11 @@ const Tilemap = (() => {
     const t = get(col, row);
     return t === TILE.FLOOR || t === TILE.DOOR_OPEN ||
            t === TILE.KEY || t === TILE.KEY_RED || t === TILE.KEY_BLUE || t === TILE.KEY_GREEN ||
-           t === TILE.EXIT || t === TILE.AMMO || t === TILE.DEMOLITION;
+           t === TILE.EXIT || t === TILE.AMMO || t === TILE.DEMOLITION ||
+           t === TILE.PRESSURE_PLATE ||
+           t === TILE.CONVEYOR_RIGHT || t === TILE.CONVEYOR_LEFT ||
+           t === TILE.CONVEYOR_UP   || t === TILE.CONVEYOR_DOWN  ||
+           t === TILE.TRAP;
   }
 
   // Returns the color string for a door tile, or null if not a door.
@@ -99,6 +114,36 @@ const Tilemap = (() => {
   function isExit(col, row)           { return get(col, row) === TILE.EXIT; }
   function isAmmo(col, row)           { return get(col, row) === TILE.AMMO; }
   function isDemolitionPerk(col, row) { return get(col, row) === TILE.DEMOLITION; }
+  function isPressurePlate(col, row)  { return get(col, row) === TILE.PRESSURE_PLATE; }
+  function isTrap(col, row)           { return get(col, row) === TILE.TRAP; }
+
+  // Returns conveyor direction {dx,dy} if the tile is a conveyor, else null.
+  function getConveyorDir(col, row) {
+    const t = get(col, row);
+    if (t === TILE.CONVEYOR_RIGHT) return { dx:  1, dy:  0 };
+    if (t === TILE.CONVEYOR_LEFT)  return { dx: -1, dy:  0 };
+    if (t === TILE.CONVEYOR_UP)    return { dx:  0, dy: -1 };
+    if (t === TILE.CONVEYOR_DOWN)  return { dx:  0, dy:  1 };
+    return null;
+  }
+
+  // Opens a timed door (transition to DOOR_OPEN state).
+  function openTimedDoor(col, row) {
+    if (get(col, row) === TILE.TIMED_DOOR) set(col, row, TILE.DOOR_OPEN);
+  }
+
+  // Re-closes a timed door after its timer expires.
+  function closeTimedDoor(col, row) {
+    if (get(col, row) === TILE.DOOR_OPEN) set(col, row, TILE.TIMED_DOOR);
+  }
+
+  // Permanently opens a one-way door.
+  function openOneWayDoor(col, row) {
+    if (get(col, row) === TILE.ONE_WAY_DOOR) {
+      set(col, row, TILE.DOOR_OPEN);
+      startDoorOpenEffect(col, row);
+    }
+  }
 
   // Open any colored door (all share DOOR_OPEN state).
   function openDoor(col, row) {
@@ -221,10 +266,32 @@ const Tilemap = (() => {
           ctx.fillStyle = `rgba(255,100,0,${0.03 + _fastBlinkPhase * 0.07})`;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawDemolition(ctx, x, y);
+        } else if (tile === TILE.PRESSURE_PLATE) {
+          _drawPressurePlate(ctx, x, y, col, row);
+        } else if (tile === TILE.TIMED_DOOR) {
+          _drawTimedDoor(ctx, x, y);
+        } else if (tile === TILE.ONE_WAY_DOOR) {
+          _drawOneWayDoor(ctx, x, y);
+        } else if (tile === TILE.CONVEYOR_RIGHT) {
+          _drawConveyor(ctx, x, y, 0);
+        } else if (tile === TILE.CONVEYOR_LEFT) {
+          _drawConveyor(ctx, x, y, Math.PI);
+        } else if (tile === TILE.CONVEYOR_UP) {
+          _drawConveyor(ctx, x, y, -Math.PI / 2);
+        } else if (tile === TILE.CONVEYOR_DOWN) {
+          _drawConveyor(ctx, x, y, Math.PI / 2);
+        } else if (tile === TILE.TRAP) {
+          _drawTrap(ctx, x, y);
+        } else if (tile === TILE.LASER_EMITTER_H) {
+          _drawWall(ctx, x, y);
+          _drawLaserEmitter(ctx, x, y, 'H');
+        } else if (tile === TILE.LASER_EMITTER_V) {
+          _drawWall(ctx, x, y);
+          _drawLaserEmitter(ctx, x, y, 'V');
         }
 
         // Subtle grid lines on passable tiles
-        if (tile !== TILE.WALL) {
+        if (tile !== TILE.WALL && tile !== TILE.LASER_EMITTER_H && tile !== TILE.LASER_EMITTER_V) {
           ctx.strokeStyle = fg;
           ctx.lineWidth   = 0.5;
           ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
@@ -657,13 +724,243 @@ const Tilemap = (() => {
     ctx.restore();
   }
 
+  // ── Pressure plate ───────────────────────────────────────
+  function _drawPressurePlate(ctx, x, y, col, row) {
+    const cx    = x + TILE_SIZE / 2;
+    const cy    = y + TILE_SIZE / 2;
+    const blink = _fastBlinkPhase;
+    const isLit = (typeof PuzzleManager !== 'undefined') && PuzzleManager.isPlateLit(col, row);
+    const glow  = isLit ? (14 + blink * 10) : (4 + blink * 4);
+    const color = isLit ? '#00ffcc' : '#00aa88';
+
+    ctx.save();
+    ctx.shadowBlur  = glow;
+    ctx.shadowColor = color;
+
+    // Recessed plate outline
+    ctx.strokeStyle = `rgba(0,${isLit ? 255 : 180},${isLit ? 204 : 140},${0.7 + blink * 0.3})`;
+    ctx.lineWidth   = 2;
+    ctx.strokeRect(x + 8, y + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+
+    // Inner fill
+    ctx.fillStyle = `rgba(0,${isLit ? 200 : 120},${isLit ? 160 : 100},${isLit ? 0.3 + blink * 0.2 : 0.12})`;
+    ctx.fillRect(x + 8, y + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+
+    // Centre diamond indicator
+    ctx.fillStyle = `rgba(0,${isLit ? 255 : 160},${isLit ? 220 : 120},${0.8 + blink * 0.2})`;
+    ctx.beginPath();
+    ctx.moveTo(cx,      cy - 7);
+    ctx.lineTo(cx + 7,  cy);
+    ctx.lineTo(cx,      cy + 7);
+    ctx.lineTo(cx - 7,  cy);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // ── Timed door ───────────────────────────────────────────
+  function _drawTimedDoor(ctx, x, y) {
+    const s     = TILE_SIZE;
+    const blink = _blinkPhase;
+
+    ctx.fillStyle = '#330055';
+    ctx.fillRect(x + 3, y + 3, s - 6, s - 6);
+    // Horizontal planks
+    ctx.fillStyle = '#0d0d1f';
+    for (let i = 1; i < 4; i++) {
+      ctx.fillRect(x + 6, y + (s / 4) * i - 1, s - 12, 2);
+    }
+    // Purple glow border
+    const glowA = 0.6 + blink * 0.4;
+    ctx.shadowBlur  = 10 * blink;
+    ctx.shadowColor = '#cc44ff';
+    ctx.strokeStyle = `rgba(180,80,255,${glowA})`;
+    ctx.lineWidth   = 2;
+    ctx.strokeRect(x + 4, y + 4, s - 8, s - 8);
+    ctx.shadowBlur  = 0;
+
+    // Clock icon
+    const cx = x + s / 2, cy = y + s / 2 - 6;
+    ctx.strokeStyle = `rgba(200,100,255,${0.8 + blink * 0.2})`;
+    ctx.lineWidth   = 1.5;
+    ctx.shadowBlur  = 5 + blink * 6;
+    ctx.shadowColor = '#cc44ff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy - 4);
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + 3, cy + 1);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // ── One-way door ─────────────────────────────────────────
+  function _drawOneWayDoor(ctx, x, y) {
+    const s     = TILE_SIZE;
+    const blink = _blinkPhase;
+
+    ctx.fillStyle = '#003344';
+    ctx.fillRect(x + 3, y + 3, s - 6, s - 6);
+    ctx.fillStyle = '#0d0d1f';
+    for (let i = 1; i < 4; i++) {
+      ctx.fillRect(x + 6, y + (s / 4) * i - 1, s - 12, 2);
+    }
+    const glowA = 0.55 + blink * 0.35;
+    ctx.shadowBlur  = 8 * blink;
+    ctx.shadowColor = '#00ccff';
+    ctx.strokeStyle = `rgba(0,180,255,${glowA})`;
+    ctx.lineWidth   = 2;
+    ctx.strokeRect(x + 4, y + 4, s - 8, s - 8);
+    ctx.shadowBlur  = 0;
+
+    // Single-arrow "one way" symbol
+    const cx = x + s / 2, cy = y + s / 2 - 4;
+    ctx.fillStyle = `rgba(0,210,255,${0.8 + blink * 0.2})`;
+    ctx.shadowBlur  = 5 + blink * 6;
+    ctx.shadowColor = '#00ccff';
+    ctx.beginPath();
+    ctx.moveTo(cx + 8, cy);
+    ctx.lineTo(cx - 2, cy - 6);
+    ctx.lineTo(cx - 2, cy + 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = `rgba(0,180,255,${0.7})`;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, cy);
+    ctx.lineTo(cx - 2, cy);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // ── Conveyor tile ─────────────────────────────────────────
+  // angle: 0=right, π=left, -π/2=up, π/2=down
+  function _drawConveyor(ctx, x, y, angle) {
+    const cx    = x + TILE_SIZE / 2;
+    const cy    = y + TILE_SIZE / 2;
+    const blink = _blinkPhase;
+    const bt    = _blinkTimer;
+    // Animated scroll: use blinkTimer to shift stripe position
+    const scroll = ((bt * 60) | 0) % TILE_SIZE;
+
+    ctx.save();
+
+    // Subtle directional tint on floor
+    ctx.fillStyle = `rgba(0,160,255,${0.06 + blink * 0.04})`;
+    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+    // Animated directional stripe
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+
+    ctx.shadowBlur  = 5 + blink * 5;
+    ctx.shadowColor = '#0088ff';
+
+    // Moving dashes along the conveyor direction
+    for (let i = -2; i <= 2; i++) {
+      const offset = ((i * 16 + scroll) % 48) - 24;
+      const alpha  = 0.3 + blink * 0.25;
+      ctx.fillStyle = `rgba(0,160,255,${alpha})`;
+      ctx.fillRect(offset - 4, -3, 8, 6);
+    }
+
+    // Arrow head
+    ctx.fillStyle = `rgba(0,200,255,${0.65 + blink * 0.25})`;
+    ctx.beginPath();
+    ctx.moveTo(14, 0);
+    ctx.lineTo(5,  7);
+    ctx.lineTo(5, -7);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // ── Trap tile ─────────────────────────────────────────────
+  function _drawTrap(ctx, x, y) {
+    const cx    = x + TILE_SIZE / 2;
+    const cy    = y + TILE_SIZE / 2;
+    const blink = _fastBlinkPhase;
+
+    ctx.save();
+    // Danger floor tint
+    ctx.fillStyle = `rgba(255,30,30,${0.07 + blink * 0.07})`;
+    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+    ctx.shadowBlur  = 8 + blink * 8;
+    ctx.shadowColor = '#ff2222';
+
+    // Warning X
+    ctx.strokeStyle = `rgba(255,50,50,${0.7 + blink * 0.3})`;
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - 9, cy - 9); ctx.lineTo(cx + 9, cy + 9);
+    ctx.moveTo(cx + 9, cy - 9); ctx.lineTo(cx - 9, cy + 9);
+    ctx.stroke();
+
+    // Outer warning circle
+    ctx.strokeStyle = `rgba(255,80,80,${0.45 + blink * 0.35})`;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.lineCap    = 'butt';
+    ctx.restore();
+  }
+
+  // ── Laser emitter ────────────────────────────────────────
+  function _drawLaserEmitter(ctx, x, y, dir) {
+    const s     = TILE_SIZE;
+    const cx    = x + s / 2;
+    const cy    = y + s / 2;
+    const blink = _blinkPhase;
+
+    ctx.save();
+    ctx.shadowBlur  = 10 + blink * 12;
+    ctx.shadowColor = '#ff3300';
+
+    // Emitter housing (rectangular lens)
+    ctx.fillStyle = `rgba(200,40,0,${0.85 + blink * 0.15})`;
+    if (dir === 'H') {
+      ctx.fillRect(x + 2, cy - 7, s - 4, 14);
+    } else {
+      ctx.fillRect(cx - 7, y + 2, 14, s - 4);
+    }
+
+    // Bright core lens
+    ctx.fillStyle = `rgba(255,${100 + (blink * 80) | 0},0,${0.9 + blink * 0.1})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Beam exit glow (nozzle flash)
+    ctx.fillStyle = `rgba(255,200,180,${0.5 + blink * 0.4})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
   return {
     TILE, TILE_SIZE, KEY_HEX_COLOR, DOOR_GLOW_COLOR,
     init, get, set,
     setTheme, getTheme,
     isPassable, isDoor, isKey, isExit, isAmmo, isDemolitionPerk,
+    isPressurePlate, isTrap, getConveyorDir,
     getDoorColor, getKeyColor,
     openDoor, openColoredDoor, removeKey, removeColoredKey, removeAmmo, removeDemolitionPerk,
+    openTimedDoor, closeTimedDoor, openOneWayDoor,
     destroyAdjacentWalls,
     startDoorOpenEffect,
     pixelWidth, pixelHeight, cols, rows,
