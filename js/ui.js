@@ -439,9 +439,9 @@ const UI = (() => {
   }
 
   // ── Mini-map ─────────────────────────────────────────────
-  // Drawn in the bottom-right corner of the canvas (over the map area).
+  // Drawn in the top-right corner of the canvas, just below the HUD bar.
   // Shows the full level layout at reduced scale with the player's position.
-  const MINIMAP_MAX  = 180; // max dimension in pixels
+  const MINIMAP_MAX  = 160; // max dimension in pixels
   const MINIMAP_PAD  = 12;  // padding from canvas edge
   let _minimapPulse  = 0;   // for player dot pulsing
 
@@ -463,7 +463,7 @@ const UI = (() => {
     const tW  = mmW / cols;
     const tH  = mmH / rows;
     const mmX = canvasW - mmW - MINIMAP_PAD;
-    const mmY = canvasH - mmH - MINIMAP_PAD;
+    const mmY = HUD_BAR_H + MINIMAP_PAD * 2; // top-right, just below HUD bar
 
     // Theme accent for minimap border/label
     const accent = _theme ? _theme.accentColor : '#00ffcc';
