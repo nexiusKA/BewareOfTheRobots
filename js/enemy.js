@@ -428,7 +428,7 @@ const EnemyManager = (() => {
 
     // ── Drawing ───────────────────────────────────────────────────────────────
 
-    drawCone(ctx) {
+    drawCone(ctx, debugMode) {
       if (this.state === STATE.DISABLED || this.state === STATE.DESTROYED) return;
 
       const r         = this.visionRange * _coneScale;
@@ -452,6 +452,21 @@ const EnemyManager = (() => {
       ctx.lineWidth   = 1;
       ctx.stroke();
       ctx.restore();
+
+      // In debug mode, also draw the full detection radius as a dashed circle.
+      if (debugMode) {
+        ctx.save();
+        ctx.translate(this.px, this.py);
+        ctx.setLineDash([5, 4]);
+        ctx.lineWidth   = 1;
+        ctx.strokeStyle = this._coneOutlineColor();
+        ctx.globalAlpha = 0.55;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
     }
 
     drawBody(ctx) {
@@ -815,9 +830,9 @@ const EnemyManager = (() => {
   }
 
   // Two-pass draw: all cones first (behind bodies), then all bodies.
-  function draw(ctx) {
+  function draw(ctx, debugMode) {
     for (const e of _enemies) {
-      if (_isVisible(e)) e.drawCone(ctx);
+      if (_isVisible(e)) e.drawCone(ctx, debugMode);
     }
     for (const e of _enemies) {
       if (_isVisible(e)) e.drawBody(ctx);

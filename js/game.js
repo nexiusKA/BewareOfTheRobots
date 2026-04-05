@@ -395,7 +395,7 @@ const Game = (() => {
     Tilemap.draw(ctx);
     FogManager.draw(ctx);
     BombManager.draw(ctx);
-    EnemyManager.draw(ctx);
+    EnemyManager.draw(ctx, _debugMode);
     Player.draw(ctx);
     ctx.restore();
 
