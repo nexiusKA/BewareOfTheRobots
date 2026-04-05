@@ -158,6 +158,7 @@ const UI = (() => {
   function isInfoVisible() { return _infoVisible; }
 
   // ── HUD (drawn on canvas) ────────────────────────────────
+  const HUD_BAR_H = 56; // must match _HUD_HEIGHT in game.js
   let _hudFlash = 0;   // key-collected flash timer
   let _hudAmmoFlash = 0; // ammo-collected flash timer
   let _keyPopTimer  = 0; // scale-pop animation on key pickup
@@ -231,7 +232,7 @@ const UI = (() => {
 
   function drawHUD(ctx, canvasW, canvasH) {
     const pad  = 14;
-    const barH = 56;
+    const barH = HUD_BAR_H;
     const y0   = 0;
 
     // Theme accent colour (falls back to default cyan)
@@ -610,7 +611,7 @@ const UI = (() => {
     ctx.shadowBlur = 12 + pulse * 12;
     ctx.shadowColor = '#ff0000';
     ctx.fillStyle = '#ff2244';
-    ctx.fillText('⚠  DANGER  ⚠', w / 2, 80);
+    ctx.fillText('⚠  DANGER  ⚠', w / 2, HUD_BAR_H + 24);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -638,9 +639,9 @@ const UI = (() => {
 
     if (_alertHoldTimer > 0) {
       const remaining = Math.max(0, _alertFailDuration - _alertHoldTimer);
-      ctx.fillText(`⚠  ALERT CRITICAL — ${remaining.toFixed(1)}s  ⚠`, w / 2, 104);
+      ctx.fillText(`⚠  ALERT CRITICAL — ${remaining.toFixed(1)}s  ⚠`, w / 2, HUD_BAR_H + 48);
     } else {
-      ctx.fillText('⚠  ALERT CRITICAL  ⚠', w / 2, 104);
+      ctx.fillText('⚠  ALERT CRITICAL  ⚠', w / 2, HUD_BAR_H + 48);
     }
 
     ctx.shadowBlur  = 0;
