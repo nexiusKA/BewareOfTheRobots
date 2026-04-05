@@ -3,8 +3,8 @@
 // In local dev this file is used as-is (all fields read "dev").
 const BUILD_INFO = (function () {
   return {
-    run:    '38',
-    sha:    '5bf4bd28d26e59d768525b40499256e623598709',
+    run:    '39',
+    sha:    'ca82468fad82cec839dcf352d3c2cc474b917860',
     branch: 'main',
     date:   '2026-04-05',
   };
