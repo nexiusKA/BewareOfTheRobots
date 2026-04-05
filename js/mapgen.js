@@ -45,15 +45,23 @@ const MapGen = (() => {
     grid[1 * cols + (cols - 2)] = E;
 
     // ── 3. Door barrier rows ────────────────────────────────
-    // Spread doorCount barriers across the top 35% of the map,
-    // keeping at least 3 rows between each barrier.
-    const topBand   = Math.max(3, Math.floor(rows * 0.35));
+    // Spread doorCount barriers evenly across most of the map height,
+    // leaving the bottom 30% as the main player start zone and keeping
+    // at least 3 rows between each barrier so every inter-door zone is
+    // large enough to hold corridors, enemies, and pickups.
+    const MIN_MAIN_ZONE_ROWS = 6; // fewest rows the player start zone may have
+    const mainZoneRows = Math.max(MIN_MAIN_ZONE_ROWS, Math.floor(rows * 0.30));
+    const doorAreaTop  = 3;                         // first door no earlier than row 3
+    const doorAreaBot  = rows - 2 - mainZoneRows;   // last door above the main zone
     const doorRows  = [];
     const doorCols  = [];
     for (let d = 0; d < doorCount; d++) {
-      let dr = 2 + Math.round(d * (topBand - 2) / Math.max(doorCount, 1));
+      // Centre each door in its equal-width bucket for even distribution.
+      let dr = doorAreaTop + Math.round(
+        (d + 0.5) * (doorAreaBot - doorAreaTop) / Math.max(doorCount, 1)
+      );
       // clamp & deduplicate
-      dr = Math.max(2, Math.min(dr, rows - 3));
+      dr = Math.max(3, Math.min(dr, rows - 3));
       while (doorRows.includes(dr)) dr++;
       doorRows.push(dr);
       // Odd column for door so it aligns cleanly with maze cells
@@ -96,15 +104,18 @@ const MapGen = (() => {
 
     // ── 7. Ammo pickups ─────────────────────────────────────
     // Place ammo near enemy corridor rows (danger zones) so the player
-    // must take a risk to collect it.  Falls back to general placement if
-    // there are not enough corridor-adjacent candidates.
+    // must take a risk to collect it.  The full playable area (row 2 to
+    // mainEnd) is searched so that post-door zones also receive pickups,
+    // giving the player incentive to push further after each door.
     const playerRow = rows - 2;
     const playerCol = 1;
     _placeAmmoNearCorridors(grid, cols, ammoCount, corridorRows,
-                            mainStart, mainEnd, playerCol, playerRow);
+                            2, mainEnd, playerCol, playerRow);
 
     // ── 7b. Demolition perk (one per level) ─────────────────
-    _placePickups(grid, cols, 1, P, mainStart, mainEnd, playerCol, playerRow, 6);
+    // Search the full playable area so the perk can appear in any zone,
+    // including post-door sections, rewarding thorough exploration.
+    _placePickups(grid, cols, 1, P, 2, mainEnd, playerCol, playerRow, 6);
 
     // ── 8. Key placeholders ─────────────────────────────────
     // Place K tiles in the main zone so _randomizeKeyPositions
@@ -231,16 +242,28 @@ const MapGen = (() => {
   function _buildHighwayCorridors(grid, cols, rows, doorRows, totalEnemies, mainStart, mainEnd) {
     const corridorRows = [];
 
-    // ── One corridor per inter-door zone ────────────────────
-    // Zones: [2..firstDoor-1], [door[0]+1..door[1]-1], …
+    // ── One or two corridors per inter-door zone ─────────────
+    // Zones are now larger (doors are spread across most of the map), so
+    // zones with 8+ rows receive a second corridor.  Two patrol paths
+    // per zone means enemies cover the space properly and the player
+    // faces challenge throughout each phase.
+    // DUAL_CORRIDOR_THRESHOLD: zones taller than this get a second highway
+    // so the upper and lower halves of the zone both see enemy patrols.
+    const DUAL_CORRIDOR_THRESHOLD = 8;
     let prev = 1; // exit row
     for (const dr of doorRows) {
       const zStart = prev + 1, zEnd = dr - 1;
-      if (zEnd > zStart + 1) { // zone has room for a corridor
-        const cr = Math.floor((zStart + zEnd) / 2);
-        if (!doorRows.includes(cr) && cr > 1 && cr < rows - 1) {
-          _openRow(grid, cols, cr);
-          corridorRows.push({ row: cr, zone: 'upper' });
+      if (zEnd > zStart + 1) { // zone has room for at least one corridor
+        const zoneHeight = zEnd - zStart;
+        const numCorridors = zoneHeight >= DUAL_CORRIDOR_THRESHOLD ? 2 : 1;
+        for (let n = 0; n < numCorridors; n++) {
+          const cr = Math.floor(
+            zStart + (n + 1) * (zEnd - zStart + 1) / (numCorridors + 1)
+          );
+          if (!doorRows.includes(cr) && cr > 1 && cr < rows - 1) {
+            _openRow(grid, cols, cr);
+            corridorRows.push({ row: cr, zone: 'upper' });
+          }
         }
       }
       prev = dr;
@@ -284,8 +307,16 @@ const MapGen = (() => {
       allEnemySlots.push({ type: 'scanner_bot', idx: i });
     }
 
-    // Distribute enemy slots across corridors (main first, then upper).
-    const corridorCycle = [...mainCorridors, ...upperCorridors];
+    // Distribute enemy slots across corridors, interleaving main and upper
+    // zones so that post-door sections always receive patrol coverage.
+    // Without interleaving, all enemies would fill the main zone first,
+    // leaving inter-door zones empty.
+    const corridorCycle = [];
+    const maxLen = Math.max(mainCorridors.length, upperCorridors.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < mainCorridors.length)  corridorCycle.push(mainCorridors[i]);
+      if (i < upperCorridors.length) corridorCycle.push(upperCorridors[i]);
+    }
     if (corridorCycle.length === 0) return enemies;
 
     allEnemySlots.forEach((slot, slotIdx) => {
