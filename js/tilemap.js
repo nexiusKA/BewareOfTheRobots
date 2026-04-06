@@ -13,7 +13,6 @@ const Tilemap = (() => {
     KEY:         4,   // collectible key — yellow (default)
     EXIT:        5,   // level exit
     AMMO:        6,   // bomb ammo pickup
-    DEMOLITION:  7,   // demolition perk — bombs destroy walls
     // Colored keys
     KEY_RED:     8,
     KEY_BLUE:    9,
@@ -86,7 +85,7 @@ const Tilemap = (() => {
     const t = get(col, row);
     return t === TILE.FLOOR || t === TILE.DOOR_OPEN ||
            t === TILE.KEY || t === TILE.KEY_RED || t === TILE.KEY_BLUE || t === TILE.KEY_GREEN ||
-           t === TILE.EXIT || t === TILE.AMMO || t === TILE.DEMOLITION ||
+           t === TILE.EXIT || t === TILE.AMMO ||
            t === TILE.PRESSURE_PLATE ||
            t === TILE.CONVEYOR_RIGHT || t === TILE.CONVEYOR_LEFT ||
            t === TILE.CONVEYOR_UP   || t === TILE.CONVEYOR_DOWN  ||
@@ -113,7 +112,6 @@ const Tilemap = (() => {
 
   function isExit(col, row)           { return get(col, row) === TILE.EXIT; }
   function isAmmo(col, row)           { return get(col, row) === TILE.AMMO; }
-  function isDemolitionPerk(col, row) { return get(col, row) === TILE.DEMOLITION; }
   function isPressurePlate(col, row)  { return get(col, row) === TILE.PRESSURE_PLATE; }
   function isTrap(col, row)           { return get(col, row) === TILE.TRAP; }
 
@@ -160,26 +158,6 @@ const Tilemap = (() => {
 
   function removeAmmo(col, row) {
     if (get(col, row) === TILE.AMMO) set(col, row, TILE.FLOOR);
-  }
-
-  function removeDemolitionPerk(col, row) {
-    if (get(col, row) === TILE.DEMOLITION) set(col, row, TILE.FLOOR);
-  }
-
-  // Destroy non-border WALL tiles directly adjacent (8 neighbours) to the
-  // bomb's tile. Called when a bomb explodes with the demolition perk active.
-  function destroyAdjacentWalls(px, py) {
-    const bc = Math.floor(px / TILE_SIZE);
-    const br = Math.floor(py / TILE_SIZE);
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
-        if (dr === 0 && dc === 0) continue;
-        const c = bc + dc;
-        const r = br + dr;
-        if (c < 1 || c > _cols - 2 || r < 1 || r > _rows - 2) continue;
-        if (get(c, r) === TILE.WALL) set(c, r, TILE.FLOOR);
-      }
-    }
   }
 
   function pixelWidth()  { return _cols * TILE_SIZE; }
@@ -262,10 +240,6 @@ const Tilemap = (() => {
           ctx.fillStyle = `rgba(0,255,136,${0.03 + _fastBlinkPhase * 0.07})`;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           _drawAmmo(ctx, x, y);
-        } else if (tile === TILE.DEMOLITION) {
-          ctx.fillStyle = `rgba(255,100,0,${0.03 + _fastBlinkPhase * 0.07})`;
-          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-          _drawDemolition(ctx, x, y);
         } else if (tile === TILE.PRESSURE_PLATE) {
           _drawPressurePlate(ctx, x, y, col, row);
         } else if (tile === TILE.TIMED_DOOR) {
@@ -626,64 +600,6 @@ const Tilemap = (() => {
     ctx.restore();
   }
 
-  // ── Demolition perk ──────────────────────────────────────
-  function _drawDemolition(ctx, x, y) {
-    const cx    = x + TILE_SIZE / 2;
-    const cy    = y + TILE_SIZE / 2;
-    const blink = _blinkPhase;
-    const glow  = 8 + blink * 10;
-
-    ctx.save();
-    ctx.shadowBlur  = glow;
-    ctx.shadowColor = '#ff6600';
-
-    // Outer pulsing ring
-    ctx.strokeStyle = `rgba(255,${100 + (blink * 80) | 0},0,${0.7 + blink * 0.3})`;
-    ctx.lineWidth   = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Inner fill
-    ctx.fillStyle = `rgba(255,60,0,${0.18 + blink * 0.12})`;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bomb body
-    ctx.shadowBlur  = 5 + blink * 5;
-    ctx.shadowColor = '#ff8800';
-    ctx.fillStyle   = `rgba(255,${80 + (blink * 60) | 0},0,${0.85 + blink * 0.15})`;
-    ctx.beginPath();
-    ctx.arc(cx, cy + 2, 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Highlight on bomb
-    ctx.fillStyle = `rgba(255,255,255,${0.3 + blink * 0.2})`;
-    ctx.beginPath();
-    ctx.arc(cx - 1.5, cy, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Fuse spark
-    ctx.strokeStyle = `rgba(255,255,100,${0.6 + blink * 0.4})`;
-    ctx.lineWidth   = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cx,     cy - 4);
-    ctx.lineTo(cx + 3, cy - 8);
-    ctx.stroke();
-
-    // Small wall-crack lines (cross) to indicate wall-breaking
-    ctx.strokeStyle = `rgba(255,180,80,${0.55 + blink * 0.25})`;
-    ctx.lineWidth   = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(cx - 11, cy - 3); ctx.lineTo(cx - 7, cy - 7);
-    ctx.moveTo(cx - 7,  cy - 3); ctx.lineTo(cx - 11, cy - 7);
-    ctx.stroke();
-
-    ctx.shadowBlur = 0;
-    ctx.restore();
-  }
-
   // ── Ammo ─────────────────────────────────────────────────
   function _drawAmmo(ctx, x, y) {
     const cx    = x + TILE_SIZE / 2;
@@ -956,12 +872,11 @@ const Tilemap = (() => {
     TILE, TILE_SIZE, KEY_HEX_COLOR, DOOR_GLOW_COLOR,
     init, get, set,
     setTheme, getTheme,
-    isPassable, isDoor, isKey, isExit, isAmmo, isDemolitionPerk,
+    isPassable, isDoor, isKey, isExit, isAmmo,
     isPressurePlate, isTrap, getConveyorDir,
     getDoorColor, getKeyColor,
-    openDoor, openColoredDoor, removeKey, removeColoredKey, removeAmmo, removeDemolitionPerk,
+    openDoor, openColoredDoor, removeKey, removeColoredKey, removeAmmo,
     openTimedDoor, closeTimedDoor, openOneWayDoor,
-    destroyAdjacentWalls,
     startDoorOpenEffect,
     pixelWidth, pixelHeight, cols, rows,
     hasLineOfSight,

@@ -20,7 +20,6 @@ const MapGen = (() => {
   const E = 5; // EXIT
   const A = 6; // AMMO pickup
   const K = 4; // KEY — yellow
-  const P = 7; // DEMOLITION perk pickup
   // Colored doors
   const D_R = 11; // DOOR_RED
   const D_B = 12; // DOOR_BLUE
@@ -144,11 +143,6 @@ const MapGen = (() => {
     const playerCol = 1;
     _placeAmmoNearCorridors(grid, cols, ammoCount, corridorRows,
                             2, mainEnd, playerCol, playerRow);
-
-    // ── 7b. Demolition perk (one per level) ─────────────────
-    // Search the full playable area so the perk can appear in any zone,
-    // including post-door sections, rewarding thorough exploration.
-    _placePickups(grid, cols, 1, P, 2, mainEnd, playerCol, playerRow, 6);
 
     // ── 8. Key placeholders (one per zone, color-matched to door) ──
     // Zone 0 (main zone) gets yellow key, zone 1 gets red, zone 2 blue, etc.
