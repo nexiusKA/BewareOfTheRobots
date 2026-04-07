@@ -168,7 +168,7 @@ const Levels = (() => {
     // All four key colors appear for the first time: yellow, red, blue, and
     // green — each locked in its own zone behind a full barrier door.  The
     // maze is deliberately tight (low extraPassageRate) so every wrong turn
-    // costs time while two FastBots and a pair of SnifferBots close in.  The
+    // costs time while a FastBot and a pair of SnifferBots close in.  The
     // enemy speed multiplier jumps to 1.68, making patrols genuinely
     // threatening even with the player's bomb stock.
     { cols: 54, rows: 42, startBombs: 3, keyCount: 4, doorCount: 4,

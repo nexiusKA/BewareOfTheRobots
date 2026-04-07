@@ -478,6 +478,8 @@ const MapGen = (() => {
   // Treats floor-like tiles as passable; barrier doors and walls block.
   // Returns the number of steps, or Infinity if unreachable.
   // Used to verify puzzle (plate→key) reachability before placing tiles.
+  // Passable tile shorthand map: F=Floor, K/K_R/K_B/K_G=Keys, E=Exit,
+  //   A=Ammo, PP=PressurePlate, CR/CL/CU/CD=Conveyors, TR=Trap.
   const _BFS_PASSABLE = new Set([F, K, K_R, K_B, K_G, E, A, PP, CR, CL, CU, CD, TR]);
   function _bfsPathLength(grid, cols, rows, from, to) {
     const fIdx = from.row * cols + from.col;
@@ -587,9 +589,12 @@ const MapGen = (() => {
       // For timed doors we also enforce a distance limit so the player can
       // realistically sprint from plate to key before the door closes.
       // Constants mirror TIMED_DOOR_DURATION (puzzle.js) and MOVE_DURATION (player.js).
+      const _TIMED_DOOR_DURATION_S = 5.5;  // seconds (matches puzzle.js)
+      const _MOVE_DURATION_S       = 0.12; // seconds per tile (matches player.js)
+      const _TIMED_PATH_BUFFER     = 7;    // extra tiles of safety margin
+      const TIMED_PATH_MAX = Math.floor(_TIMED_DOOR_DURATION_S / _MOVE_DURATION_S) - _TIMED_PATH_BUFFER;
       const bfsLen = _bfsPathLength(grid, cols, rows, platePos, kp);
       if (bfsLen === Infinity) continue; // plate and key are in disconnected zones
-      const TIMED_PATH_MAX = 38; // 5.5 s / 0.12 s·tile⁻¹ ≈ 45, leave ~7-tile buffer
       if (type === 'timed' && bfsLen > TIMED_PATH_MAX) continue;
 
       // Place tiles and record link.
