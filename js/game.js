@@ -238,6 +238,7 @@ const Game = (() => {
     _conveyorChain = 0;
     _levelTimer = 0;
     _prevAlertCount = 0;
+    Achievements.resetLevelStats();
     // Close pause overlay if open (e.g. after restart from pause)
     const pauseEl = document.getElementById('pause-overlay');
     if (pauseEl) pauseEl.classList.add('hidden');
@@ -275,6 +276,7 @@ const Game = (() => {
     _state = STATE.WIN;
     Sound.levelComplete();
     Music.stop();
+    Achievements.onLevelComplete(_currentLevel, _levelTimer);
     const nextIndex = _currentLevel + 1;
     if (nextIndex >= Levels.count()) {
       UI.showVictory(() => {
@@ -317,6 +319,7 @@ const Game = (() => {
 
     _update(rawDt, dt);
     _render();
+    Achievements.update(rawDt);
 
     Input.flush();
     _raf = requestAnimationFrame(_loop);
@@ -453,6 +456,7 @@ const Game = (() => {
       BombManager.placeBomb(Player.getPx(), Player.getPy());
       Sound.bombPlace();
       _bombPlaceFlash = 0.12;
+      Achievements.trackBombPlaced();
       UI.setHUD(_currentLevel + 1, Levels.count(), Player.getColorKeys(), Player.getBombAmmo(), _totalKeysCollected);
     }
 
@@ -540,6 +544,7 @@ const Game = (() => {
     }
 
     UI.setAlertLevel(_globalAlert, _alertHoldTimer, ALERT_FAIL_DURATION);
+    Achievements.trackMaxAlert(_globalAlert);
 
     // Near-detection slow-mo
     _threat = EnemyManager.getNearAlert(Player.getPx(), Player.getPy());
