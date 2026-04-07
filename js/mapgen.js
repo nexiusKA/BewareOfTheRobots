@@ -474,6 +474,44 @@ const MapGen = (() => {
 
   // ── Utilities ────────────────────────────────────────────
 
+  // BFS shortest path length between two grid positions.
+  // Treats floor-like tiles as passable; barrier doors and walls block.
+  // Returns the number of steps, or Infinity if unreachable.
+  // Used to verify puzzle (plate→key) reachability before placing tiles.
+  // Passable tile shorthand map: F=Floor, K/K_R/K_B/K_G=Keys, E=Exit,
+  //   A=Ammo, PP=PressurePlate, CR/CL/CU/CD=Conveyors, TR=Trap.
+  const _BFS_PASSABLE = new Set([F, K, K_R, K_B, K_G, E, A, PP, CR, CL, CU, CD, TR]);
+  function _bfsPathLength(grid, cols, rows, from, to) {
+    const fIdx = from.row * cols + from.col;
+    const tIdx = to.row   * cols + to.col;
+    if (fIdx === tIdx) return 0;
+    const visited = new Uint8Array(cols * rows);
+    visited[fIdx] = 1;
+    // Simple queue using two arrays (current and next level) for BFS.
+    let current = [fIdx];
+    let dist = 0;
+    while (current.length > 0) {
+      dist++;
+      const next = [];
+      for (const idx of current) {
+        const c = idx % cols;
+        const r = (idx - c) / cols;
+        for (const [dc, dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nc = c + dc, nr = r + dr;
+          if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
+          const ni = nr * cols + nc;
+          if (visited[ni]) continue;
+          if (!_BFS_PASSABLE.has(grid[ni])) continue;
+          if (ni === tIdx) return dist;
+          visited[ni] = 1;
+          next.push(ni);
+        }
+      }
+      current = next;
+    }
+    return Infinity;
+  }
+
   // Returns a random odd integer in [lo, hi] (both inclusive).
   function _pickOdd(lo, hi) {
     lo = lo % 2 === 0 ? lo + 1 : lo;
@@ -543,6 +581,21 @@ const MapGen = (() => {
       // Find a floor tile between doorPos and player start for the plate.
       const platePos = _findPlateTile(grid, cols, rows, doorPos, playerRow);
       if (!platePos) continue;
+
+      // Verify the key is BFS-reachable from the plate through the current grid.
+      // At this point doorPos is still a floor tile, so the path naturally passes
+      // through it.  If the plate ended up in a different zone (separated by a
+      // locked barrier door), the BFS will return Infinity and we skip the puzzle.
+      // For timed doors we also enforce a distance limit so the player can
+      // realistically sprint from plate to key before the door closes.
+      // Constants mirror TIMED_DOOR_DURATION (puzzle.js) and MOVE_DURATION (player.js).
+      const _TIMED_DOOR_DURATION_S = 5.5;  // seconds (matches puzzle.js)
+      const _MOVE_DURATION_S       = 0.12; // seconds per tile (matches player.js)
+      const _TIMED_PATH_BUFFER     = 7;    // extra tiles of safety margin
+      const TIMED_PATH_MAX = Math.floor(_TIMED_DOOR_DURATION_S / _MOVE_DURATION_S) - _TIMED_PATH_BUFFER;
+      const bfsLen = _bfsPathLength(grid, cols, rows, platePos, kp);
+      if (bfsLen === Infinity) continue; // plate and key are in disconnected zones
+      if (type === 'timed' && bfsLen > TIMED_PATH_MAX) continue;
 
       // Place tiles and record link.
       grid[doorPos.row  * cols + doorPos.col]  = doorTile;
