@@ -4,11 +4,17 @@
 
 const Menu = (() => {
 
-  const _el          = document.getElementById('start-menu');
-  const _playBtn     = document.getElementById('start-menu-play-btn');
-  const _continueBtn = document.getElementById('start-menu-continue-btn');
-  const _soundBtn    = document.getElementById('start-menu-sound-btn');
-  const _buildEl     = document.getElementById('start-menu-build');
+  const _el              = document.getElementById('start-menu');
+  const _playBtn         = document.getElementById('start-menu-play-btn');
+  const _continueBtn     = document.getElementById('start-menu-continue-btn');
+  const _soundBtn        = document.getElementById('start-menu-sound-btn');
+  const _buildEl         = document.getElementById('start-menu-build');
+  const _progressEl      = document.getElementById('start-menu-progress');
+  const _achievementsBtn = document.getElementById('start-menu-achievements-btn');
+  const _achOverlay      = document.getElementById('achievements-overlay');
+  const _achGrid         = document.getElementById('achievements-grid');
+  const _achCount        = document.getElementById('achievements-count');
+  const _achCloseBtn     = document.getElementById('achievements-close-btn');
 
   // Callback stored at show() time; onclick is wired once during init.
   let _onStartCallback = null;
@@ -75,6 +81,107 @@ const Menu = (() => {
     _timeoutId = setTimeout(_finish, 500);
   }
 
+  // ── Achievements overlay ─────────────────────────────────
+  function _buildAchievementsGrid() {
+    if (!_achGrid) return;
+    const all  = Achievements.getAll();
+    const prog = Achievements.getProgress();
+
+    if (_achCount) {
+      _achCount.textContent = prog.unlocked + ' / ' + prog.total + ' UNLOCKED';
+    }
+
+    _achGrid.innerHTML = '';
+    for (const a of all) {
+      const card = document.createElement('div');
+      card.className = 'ach-card ' + (a.unlocked ? 'ach-unlocked' : 'ach-locked');
+
+      const iconEl = document.createElement('div');
+      iconEl.className = 'ach-card-icon';
+      iconEl.textContent = a.icon;
+
+      const body = document.createElement('div');
+      body.className = 'ach-card-body';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'ach-card-name';
+      nameEl.textContent = a.name;
+
+      const descEl = document.createElement('div');
+      descEl.className = 'ach-card-desc';
+      descEl.textContent = a.desc;
+
+      body.appendChild(nameEl);
+      body.appendChild(descEl);
+
+      if (a.progress) {
+        const prog = document.createElement('div');
+        prog.className = 'ach-card-progress';
+        const barBg = document.createElement('div');
+        barBg.className = 'ach-progress-bar-bg';
+        const barFill = document.createElement('div');
+        barFill.className = 'ach-progress-bar-fill';
+        const pct = a.unlocked ? 100 : (a.target > 0 ? Math.round((a.currentProgress / a.target) * 100) : 0);
+        barFill.style.width = pct + '%';
+        barBg.appendChild(barFill);
+        const label = document.createElement('span');
+        label.className = 'ach-progress-label';
+        label.textContent = (a.unlocked ? a.target : (a.currentProgress || 0)) + '/' + a.target;
+        prog.appendChild(barBg);
+        prog.appendChild(label);
+        body.appendChild(prog);
+      }
+
+      const badge = document.createElement('div');
+      badge.className = 'ach-card-badge';
+      badge.textContent = a.unlocked ? '✓ UNLOCKED' : 'LOCKED';
+      body.appendChild(badge);
+
+      card.appendChild(iconEl);
+      card.appendChild(body);
+      _achGrid.appendChild(card);
+    }
+  }
+
+  function _openAchievements() {
+    if (!_achOverlay) return;
+    _buildAchievementsGrid();
+    _achOverlay.classList.remove('hidden');
+  }
+
+  function _closeAchievements() {
+    if (!_achOverlay) return;
+    _achOverlay.classList.add('hidden');
+  }
+
+  if (_achievementsBtn) {
+    _achievementsBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      Sound.tap();
+      _openAchievements();
+    });
+  }
+
+  if (_achCloseBtn) {
+    _achCloseBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      Sound.tap();
+      _closeAchievements();
+    });
+  }
+
+  // ── Achievement progress badge in start menu ─────────────
+  function _syncProgress() {
+    if (!_progressEl) return;
+    const prog = Achievements.getProgress();
+    if (prog.total === 0) {
+      _progressEl.classList.add('hidden');
+      return;
+    }
+    _progressEl.classList.remove('hidden');
+    _progressEl.textContent = '🏆  ' + prog.unlocked + ' / ' + prog.total + '  ACHIEVEMENTS';
+  }
+
   // ── Play button — wired once at init time ─────────────────
   if (_playBtn) {
     _playBtn.addEventListener('click', function () {
@@ -93,6 +200,7 @@ const Menu = (() => {
     if (_playBtn) _playBtn.disabled = false;
     _el.classList.remove('hidden', 'menu-fading-out');
     _syncSoundBtn();
+    _syncProgress();
 
     // Show Continue button only if there is a saved mid-game level
     const saved = _getSaved();
@@ -115,6 +223,7 @@ const Menu = (() => {
   function hide() {
     _el.classList.add('hidden');
     _el.classList.remove('menu-fading-out');
+    _closeAchievements();
   }
 
   return { show, hide };
