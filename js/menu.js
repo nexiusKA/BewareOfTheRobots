@@ -121,7 +121,7 @@ const Menu = (() => {
         barBg.className = 'ach-progress-bar-bg';
         const barFill = document.createElement('div');
         barFill.className = 'ach-progress-bar-fill';
-        const pct = a.unlocked ? 100 : Math.round((a.currentProgress / a.target) * 100);
+        const pct = a.unlocked ? 100 : (a.target > 0 ? Math.round((a.currentProgress / a.target) * 100) : 0);
         barFill.style.width = pct + '%';
         barBg.appendChild(barFill);
         const label = document.createElement('span');

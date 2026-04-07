@@ -165,7 +165,7 @@ const Achievements = (() => {
     if (stats.sectorsCompleted >= 1)   candidates.push('first_step');
     if (_levelStats.ghost)             candidates.push('ghost');
     if (destroyed >= 3)                candidates.push('demolitionist');
-    if (levelTimer > 0 && levelTimer < 90) candidates.push('speed_run');
+    if (levelTimer > 0 && levelTimer <= 90) candidates.push('speed_run');
     if (_levelStats.bombsPlaced === 0) candidates.push('pacifist');
     if (stats.sectorsCompleted >= 5)   candidates.push('agent');
     if ((stats.ghostSectors || 0) >= 3) candidates.push('shadow_ops');
@@ -212,7 +212,7 @@ const Achievements = (() => {
     _toastActive = true;
     _toastTimer  = 3.2; // seconds the toast stays visible
 
-    if (typeof Sound !== 'undefined' && Sound.tap) Sound.tap();
+    Sound.tap();
   }
 
   // ── Data for UI ───────────────────────────────────────────
@@ -223,7 +223,7 @@ const Achievements = (() => {
       ...d,
       unlocked:        !!unlocked[d.id],
       unlockedAt:      unlocked[d.id] || null,
-      currentProgress: d.progress ? Math.min(stats[d.statKey] || 0, d.target) : null,
+      currentProgress: d.progress && d.target ? Math.min(stats[d.statKey] || 0, d.target) : null,
     }));
   }
 
