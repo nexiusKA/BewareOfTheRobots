@@ -1,5 +1,5 @@
 // ── level.js ────────────────────────────────────────────────
-// Level configuration — 10 sectors.
+// Level configuration — 13 sectors.
 //
 // Maps are now generated procedurally by MapGen (mapgen.js) using
 // these configs.  No tile data is stored here.
@@ -148,6 +148,49 @@ const Levels = (() => {
       snifferCount: 1, fastCount: 0, heavyCount: 1,
       extraPassageRate: 0.08, enemySpeedMult: 1.38, visionMult: 1.38,
       minKeyDist: 14,
+      puzzleDensityOverride: 1.00 },
+
+    // ── Sector 11: CHAOS SURGE — more enemies, bigger maze, all systems hot ───
+    // A 52×40 arena with three colored keys spread across three heavily guarded
+    // zones.  A FastBot makes reaction timing critical; a HeavyBot soaks two
+    // bombs; SnifferBots patrol dead-ends where keys hide.  Every key is
+    // puzzle-gated (density 1.0) with a full mix of timed doors, one-way gates,
+    // lasers, traps, and conveyors.  More bombs and ammo crates offset the
+    // increased enemy count — rationing is still essential.
+    { cols: 52, rows: 40, startBombs: 3, keyCount: 3, doorCount: 3,
+      ammoCount: 4, enemyCount: 3, scannerCount: 2,
+      snifferCount: 1, fastCount: 1, heavyCount: 1,
+      extraPassageRate: 0.18, enemySpeedMult: 1.52, visionMult: 1.52,
+      minKeyDist: 15,
+      puzzleDensityOverride: 1.00 },
+
+    // ── Sector 12: MAXIMUM OVERDRIVE — four keys, elite enemies, tight maze ───
+    // All four key colors appear for the first time: yellow, red, blue, and
+    // green — each locked in its own zone behind a full barrier door.  The
+    // maze is deliberately tight (low extraPassageRate) so every wrong turn
+    // costs time while two FastBots and a pair of SnifferBots close in.  The
+    // enemy speed multiplier jumps to 1.68, making patrols genuinely
+    // threatening even with the player's bomb stock.
+    { cols: 54, rows: 42, startBombs: 3, keyCount: 4, doorCount: 4,
+      ammoCount: 5, enemyCount: 3, scannerCount: 2,
+      snifferCount: 2, fastCount: 1, heavyCount: 1,
+      extraPassageRate: 0.07, enemySpeedMult: 1.68, visionMult: 1.68,
+      minKeyDist: 15,
+      puzzleDensityOverride: 1.00 },
+
+    // ── Sector 13: SINGULARITY — the true final test ──────────────────────────
+    // Maximum map size, maximum enemy roster.  Four keys, four doors, every
+    // puzzle system fully unleashed.  Two HeavyBots demand four bomb hits
+    // between them; two FastBots eliminate any safe loitering; two SnifferBots
+    // sniff out hiding spots through walls.  Enemy speed and vision are both
+    // at 1.88×, making even brief exposure lethal.  The very low
+    // extraPassageRate (0.05) creates a near-pure maze — navigation is as
+    // dangerous as the enemies themselves.
+    { cols: 58, rows: 44, startBombs: 3, keyCount: 4, doorCount: 4,
+      ammoCount: 5, enemyCount: 4, scannerCount: 2,
+      snifferCount: 2, fastCount: 2, heavyCount: 2,
+      extraPassageRate: 0.05, enemySpeedMult: 1.88, visionMult: 1.88,
+      minKeyDist: 16,
       puzzleDensityOverride: 1.00 },
   ];
 
