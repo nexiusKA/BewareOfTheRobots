@@ -501,7 +501,7 @@ const UI = (() => {
         const th   = Math.max(1, tH);
 
         // In fog mode, unexplored tiles appear as solid black on the minimap
-        if (!FogManager.isExplored(c, r)) {
+        if (!FogManager.isVisible(c, r)) {
           ctx.fillStyle = 'rgba(0,0,0,0.95)';
           ctx.fillRect(tx, ty, tw, th);
           continue;

@@ -1081,7 +1081,7 @@ const EnemyManager = (() => {
   }
 
   function _isVisible(e) {
-    if (FogManager.isExplored(Math.floor(e.px / TS), Math.floor(e.py / TS))) return true;
+    if (FogManager.isVisible(Math.floor(e.px / TS), Math.floor(e.py / TS))) return true;
     if (FogManager.isEnabled() && _lastPlayerPx >= 0) {
       const peekPx = FOG_PEEK_RADIUS * TS;
       const dx = e.px - _lastPlayerPx;
