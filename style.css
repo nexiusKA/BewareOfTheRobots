@@ -1560,6 +1560,18 @@ body.pseudo-fullscreen #game-container {
   }
 }
 
+/* ── Debug panel — repositioned on mobile to avoid dpad overlap ── */
+@media (hover: none) and (pointer: coarse) {
+  #debug-panel {
+    top: 60px;
+    bottom: auto;
+    left: 8px;
+    right: auto;
+    max-height: calc(100% - 70px);
+    overflow-y: auto;
+  }
+}
+
 .mobile-toggle-btn {
   display: block;
   margin: 10px auto 0;
