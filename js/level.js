@@ -1,5 +1,5 @@
 // ── level.js ────────────────────────────────────────────────
-// Level configuration — 13 sectors.
+// Level configuration — 10 sectors.
 //
 // Maps are now generated procedurally by MapGen (mapgen.js) using
 // these configs.  No tile data is stored here.
@@ -20,65 +20,31 @@
 const Levels = (() => {
 
   const _levels = [
-    // ── Sector 1: Introduction — movement, key, door, single guard ───────────
-    // Small, very open map. One slow GuardBot with a wide patrol the player
-    // can easily sidestep. Key is visible in the maze; door blocks the exit.
-    // No bombs, no puzzles — pure tutorial.
-    { cols: 22, rows: 18, startBombs: 0, keyCount: 1, doorCount: 1,
-      ammoCount: 0, enemyCount: 1, scannerCount: 0,
-      snifferCount: 0, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.42, enemySpeedMult: 0.70, visionMult: 0.72,
-      minKeyDist: 5 },
-
-    // ── Sector 2: Exploration & Timing — side path, two guards ───────────────
-    // Small-medium map. Key is hidden off the main corridor so the player must
-    // explore. Two GuardBots whose paths cross at least once, introducing the
-    // timing challenge. One ammo crate as a reward for exploring.
-    { cols: 26, rows: 20, startBombs: 1, keyCount: 1, doorCount: 1,
+    // ── Sector 1: Introduction & Timing — movement, exploration, two guards ───
+    // Small-medium, open map.  The key is hidden just off the main corridor so
+    // the player must explore.  Two slow GuardBots whose paths cross introduce
+    // the timing challenge without being punishing.  One ammo crate rewards
+    // exploration.  No scanners, no puzzles — learn to move and observe.
+    { cols: 28, rows: 22, startBombs: 1, keyCount: 1, doorCount: 1,
       ammoCount: 1, enemyCount: 2, scannerCount: 0,
       snifferCount: 0, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.25, enemySpeedMult: 0.80, visionMult: 0.80,
-      minKeyDist: 8 },
+      extraPassageRate: 0.33, enemySpeedMult: 0.75, visionMult: 0.76,
+      minKeyDist: 6 },
 
-    // ── Sector 3: Multi-phase + ScannerBot intro — two keys, two doors ────────
-    // Medium map split into two distinct areas by the first door. Phase 1 uses
-    // a GuardBot; Phase 2 introduces the ScannerBot guarding the second key.
-    // No traps or pressure plates — focus is on planning the route.
-    { cols: 30, rows: 22, startBombs: 1, keyCount: 2, doorCount: 2,
+    // ── Sector 2: Systems Tutorial — scanner, pressure plate & laser combo ────
+    // Medium map.  Phase 1 introduces the ScannerBot guarding one key behind a
+    // pressure-plate one-way gate.  Phase 2 adds laser emitters on the corridor
+    // to the second key — the player can bomb them or route around.  Both core
+    // puzzle mechanics appear together so players enter the main game prepared.
+    { cols: 34, rows: 26, startBombs: 1, keyCount: 2, doorCount: 2,
       ammoCount: 2, enemyCount: 1, scannerCount: 1,
       snifferCount: 0, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.18, enemySpeedMult: 0.88, visionMult: 0.88,
-      minKeyDist: 8 },
-
-    // ── Sector 4: Pressure Plate Intro — plate → gate → key flow ──────────────
-    // Medium map with one key-door phase and two GuardBots.
-    // A one-way gate (tile: ONE_WAY_DOOR/OW) blocks access to the key area;
-    // a pressure plate nearby opens it permanently.  No lasers, conveyors,
-    // or traps so the new mechanic reads clearly.  After grabbing the key and
-    // unlocking the main door the player still faces one guarded corridor before
-    // the exit.
-    { cols: 32, rows: 26, startBombs: 1, keyCount: 1, doorCount: 1,
-      ammoCount: 1, enemyCount: 2, scannerCount: 0,
-      snifferCount: 0, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.22, enemySpeedMult: 0.93, visionMult: 0.92,
-      minKeyDist: 10,
-      puzzleDensityOverride: 1.0, puzzleDoorType: 'oneway',
-      puzzleNoLasers: true, puzzleNoConveyors: true, puzzleNoTraps: true },
-
-    // ── Sector 5: Laser System Intro — disable emitters, reach the key ────────
-    // Wider map with a different aspect ratio.  Laser beams cross corridors on
-    // the route to the key.  One GuardBot + one ScannerBot add pressure while
-    // the player bombs emitters or routes around them.  Pressure-plate gates
-    // are still present so both mechanics appear together.
-    { cols: 36, rows: 26, startBombs: 1, keyCount: 1, doorCount: 1,
-      ammoCount: 2, enemyCount: 1, scannerCount: 1,
-      snifferCount: 0, fastCount: 0, heavyCount: 0,
-      extraPassageRate: 0.20, enemySpeedMult: 0.98, visionMult: 0.96,
-      minKeyDist: 11,
-      puzzleDensityOverride: 0.85,
+      extraPassageRate: 0.20, enemySpeedMult: 0.93, visionMult: 0.90,
+      minKeyDist: 9,
+      puzzleDensityOverride: 0.85, puzzleDoorType: 'oneway',
       puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 6: Timed Door + Multi-Stage Planning ───────────────────────────
+    // ── Sector 3: Timed Door + Multi-Stage Planning ───────────────────────────
     // Two-door map.  Both keys are gated by timed doors: the player must step
     // on each pressure plate and move through the opening before it closes.
     // Two GuardBots and a ScannerBot make every dash dangerous.  The larger
@@ -91,7 +57,7 @@ const Levels = (() => {
       puzzleDensityOverride: 0.9, puzzleDoorType: 'timed',
       puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 7: MULTI-KEY CHAOS — first real complex puzzle ────────────────
+    // ── Sector 4: MULTI-KEY CHAOS — first real complex puzzle ────────────────
     // Three colored keys (yellow/red/blue) locked behind three doors.  The map
     // is deliberately open (high extraPassageRate) so multiple branching paths
     // converge on a central hub.  Each branch hides one key behind a mix of
@@ -106,7 +72,7 @@ const Levels = (() => {
       puzzleDensityOverride: 0.70,
       puzzleNoLasers: true, puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 8: LASER + TIMING HELL — lasers, timed doors, enemy pressure ──
+    // ── Sector 5: LASER + TIMING HELL — lasers, timed doors, enemy pressure ──
     // Laser emitters block the corridors leading to both keys.  Every key zone
     // is gated by a timed pressure-plate door: the player must hit the plate,
     // sprint through the narrowing window, and collect the key while a
@@ -121,7 +87,7 @@ const Levels = (() => {
       puzzleDensityOverride: 0.90, puzzleDoorType: 'timed',
       puzzleNoConveyors: true, puzzleNoTraps: true },
 
-    // ── Sector 9: TRAP LEVEL — fake safety, one-way corridors, hidden traps ──
+    // ── Sector 6: TRAP LEVEL — fake safety, one-way corridors, hidden traps ──
     // The map looks open but one-way doors seal exits behind the player and
     // trap tiles lurk on the obvious path.  A SnifferBot with radius-only
     // detection sniffs out hiding spots even through walls, so players cannot
@@ -135,7 +101,7 @@ const Levels = (() => {
       puzzleDensityOverride: 0.85, puzzleDoorType: 'oneway',
       puzzleNoConveyors: true },
 
-    // ── Sector 10: FINAL ESCAPE — ultimate test, every system active ──────────
+    // ── Sector 7: FINAL ESCAPE — ultimate test, every system active ──────────
     // Two keys, two doors, one exit.  Start in a tight entry corridor, push
     // into a large chaotic zone bristling with overlapping vision cones, then
     // make a final sprint through a laser-and-timed-door gauntlet as enemies
@@ -150,7 +116,7 @@ const Levels = (() => {
       minKeyDist: 14,
       puzzleDensityOverride: 1.00 },
 
-    // ── Sector 11: CHAOS SURGE — more enemies, bigger maze, all systems hot ───
+    // ── Sector 8: CHAOS SURGE — more enemies, bigger maze, all systems hot ───
     // A 52×40 arena with three colored keys spread across three heavily guarded
     // zones.  A FastBot makes reaction timing critical; a HeavyBot soaks two
     // bombs; SnifferBots patrol dead-ends where keys hide.  Every key is
@@ -164,7 +130,7 @@ const Levels = (() => {
       minKeyDist: 15,
       puzzleDensityOverride: 1.00 },
 
-    // ── Sector 12: MAXIMUM OVERDRIVE — four keys, elite enemies, tight maze ───
+    // ── Sector 9: MAXIMUM OVERDRIVE — four keys, elite enemies, tight maze ───
     // All four key colors appear for the first time: yellow, red, blue, and
     // green — each locked in its own zone behind a full barrier door.  The
     // maze is deliberately tight (low extraPassageRate) so every wrong turn
@@ -178,7 +144,7 @@ const Levels = (() => {
       minKeyDist: 15,
       puzzleDensityOverride: 1.00 },
 
-    // ── Sector 13: SINGULARITY — the true final test ──────────────────────────
+    // ── Sector 10: SINGULARITY — the true final test ──────────────────────────
     // Maximum map size, maximum enemy roster.  Four keys, four doors, every
     // puzzle system fully unleashed.  Two HeavyBots demand four bomb hits
     // between them; two FastBots eliminate any safe loitering; two SnifferBots
