@@ -60,7 +60,7 @@ const Achievements = (() => {
     {
       id: 'elite',
       name: 'ELITE OPERATIVE',
-      desc: 'Complete all 13 sectors. Mission accomplished.',
+      desc: 'Complete all 10 sectors. Mission accomplished.',
       icon: '⭐',
     },
     {
@@ -145,7 +145,7 @@ const Achievements = (() => {
   // Called from game.js _onExit() after the level is won.
   // levelIndex — 0-indexed level that was just completed.
   // levelTimer — seconds elapsed this run.
-  const TOTAL_LEVELS = 13;
+  const TOTAL_LEVELS = 10;
 
   function onLevelComplete(levelIndex, levelTimer) {
     // Count how many enemies were destroyed this level.
